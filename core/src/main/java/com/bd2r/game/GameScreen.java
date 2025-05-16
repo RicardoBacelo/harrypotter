@@ -46,10 +46,10 @@ public class GameScreen implements Screen {
 
 // Cada linha tem 32 de altura, cada coluna 32 de largura
         for (int i = 0; i < 3; i++) {
-            walkUpFrames[i]    = new TextureRegion(playerTexture, i * 32, 0,   32, 32);  // linha 1
-            walkRightFrames[i] = new TextureRegion(playerTexture, i * 32, 32,  32, 32);  // linha 2
-            walkLeftFrames[i]  = new TextureRegion(playerTexture, i * 32, 64,  32, 32);  // linha 3
-            walkDownFrames[i]  = new TextureRegion(playerTexture, i * 32, 96,  32, 32);  // linha 4
+            walkDownFrames[i]    = new TextureRegion(playerTexture, i * 32, 0,   32, 32);  // linha 1
+            walkLeftFrames[i] = new TextureRegion(playerTexture, i * 32, 32,  32, 32);  // linha 2
+            walkRightFrames[i]  = new TextureRegion(playerTexture, i * 32, 64,  32, 32);  // linha 3
+            walkUpFrames[i]  = new TextureRegion(playerTexture, i * 32, 96,  32, 32);  // linha 4
         }
 
         /*walkDownFrames[0] = new TextureRegion(playerTexture, 0, 96, 32, 32);

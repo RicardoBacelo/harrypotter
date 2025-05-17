@@ -5,17 +5,18 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.bd2r.game.ecs.Entity;
 import com.bd2r.game.ecs.EntityManager;
-import com.bd2r.game.ecs.components.AnimationComponent;
-import com.bd2r.game.ecs.components.PositionComponent;
-import com.bd2r.game.ecs.components.VelocityComponent;
+import com.bd2r.game.ecs.components.*;
 import com.bd2r.game.ecs.systems.MovementSystem;
 import com.bd2r.game.ecs.systems.RenderSystem;
 import com.bd2r.game.factory.EntityFactory;
+import com.bd2r.game.pathfinder.AStarPathfinder;
+import com.bd2r.game.pathfinder.Node;
 
 import java.util.List;
 
@@ -23,63 +24,105 @@ public class GameScreen implements Screen {
 
     private final EntityManager entityManager = new EntityManager();
     private final MovementSystem movementSystem = new MovementSystem();
-    private RenderSystem renderSystem;
+    private final RenderSystem renderSystem = new RenderSystem();
 
     private SpriteBatch batch;
-    private Texture playerTexture;
+    private ShapeRenderer shapeRenderer;
+    private Texture playerTexture, mapTexture;
 
     private Entity player;
-    public TextureRegion[] walkUpFrames, walkDownFrames, walkLeftFrames, walkRightFrames;
+    private TextureRegion[] walkUpFrames, walkDownFrames, walkLeftFrames, walkRightFrames;
 
+    private OrthographicCamera camera;
+
+    private static final int TILE_SIZE = 32;
+    private int mapWidth, mapHeight;
 
     @Override
     public void show() {
         batch = new SpriteBatch();
-        renderSystem = new RenderSystem(batch);
+        shapeRenderer = new ShapeRenderer();
 
-        walkDownFrames = new TextureRegion[3];
+        camera = new OrthographicCamera();
+        camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
+        mapTexture = new Texture(Gdx.files.internal("mundo.png"));
+        mapWidth = mapTexture.getWidth();
+        mapHeight = mapTexture.getHeight();
+
+        playerTexture = new Texture(Gdx.files.internal("hero1.png"));
+
         walkUpFrames = new TextureRegion[3];
-        walkRightFrames = new TextureRegion[3];
+        walkDownFrames = new TextureRegion[3];
         walkLeftFrames = new TextureRegion[3];
+        walkRightFrames = new TextureRegion[3];
 
-        playerTexture = new Texture(Gdx.files.internal("player1.png"));
-
-// Cada linha tem 32 de altura, cada coluna 32 de largura
         for (int i = 0; i < 3; i++) {
-            walkUpFrames[i]    = new TextureRegion(playerTexture, i * 32, 0,   32, 32);  // linha 1
-            walkRightFrames[i] = new TextureRegion(playerTexture, i * 32, 32,  32, 32);  // linha 2
-            walkLeftFrames[i]  = new TextureRegion(playerTexture, i * 32, 64,  32, 32);  // linha 3
-            walkDownFrames[i]  = new TextureRegion(playerTexture, i * 32, 96,  32, 32);  // linha 4
+            walkDownFrames[i]  = new TextureRegion(playerTexture, i * 32, 0, 32, 32);
+            walkLeftFrames[i]  = new TextureRegion(playerTexture, i * 32, 32, 32, 32);
+            walkRightFrames[i] = new TextureRegion(playerTexture, i * 32, 64, 32, 32);
+            walkUpFrames[i]    = new TextureRegion(playerTexture, i * 32, 96, 32, 32);
         }
 
-        /*walkDownFrames[0] = new TextureRegion(playerTexture, 0, 96, 32, 32);
-        walkDownFrames[1] = new TextureRegion(playerTexture, 32, 96, 32, 32);
-        walkDownFrames[2] = new TextureRegion(playerTexture, 64, 96, 32, 32);
-        */
-
-
-        TextureRegion playerFrame = new TextureRegion(playerTexture, 0, 96, 32, 32);
-
-        AnimationComponent walkAnim = new AnimationComponent(walkUpFrames, 0.2f);
-
-        player = EntityFactory.createPlayer(100, 100, walkUpFrames[1]);
-        player.addComponent(walkAnim);
+        player = EntityFactory.createPlayer(485, 60, walkDownFrames[1]);
+        player.addComponent(new AnimationComponent(walkUpFrames, 0.2f));
         entityManager.addEntity(player);
     }
 
     @Override
     public void render(float delta) {
         handleInput();
-
-        movementSystem.update(entityManager.getEntities(), delta);
+        movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
 
         player.getComponent(AnimationComponent.class).update(delta);
+        PositionComponent pos = player.getComponent(PositionComponent.class);
 
+        // Center camera on player
+        camera.position.set(pos.x + 16, pos.y + 16, 0);
+        clampCameraPosition();
+        camera.update();
+
+        // CLICK TO MOVE
+        if (Gdx.input.justTouched()) {
+            try {
+                // Convert screen to world coords
+                int tileX = (int) ((Gdx.input.getX() + camera.position.x - camera.viewportWidth / 2) / TILE_SIZE);
+                int tileY = (int) ((Gdx.graphics.getHeight() - Gdx.input.getY() + camera.position.y - camera.viewportHeight / 2) / TILE_SIZE);
+
+                int startX = (int) (pos.x / TILE_SIZE);
+                int startY = (int) (pos.y / TILE_SIZE);
+
+                System.out.println("🖱️ Clicked tile: " + tileX + "," + tileY);
+                System.out.println("👣 Player at tile: " + startX + "," + startY);
+
+                AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("mapa.txt")); // path corrected
+                List<Node> path = pathfinder.findPath(startX, startY, tileX, tileY);
+
+                if (path != null && !path.isEmpty()) {
+                    System.out.println("✅ Path found! " + path.size() + " steps.");
+                    player.addComponent(new PathComponent());
+                    player.getComponent(PathComponent.class).path = path;
+                } else {
+                    System.out.println("⚠️ No path found.");
+                }
+
+            } catch (Exception e) {
+                System.err.println("❌ Error on mouse click:");
+                e.printStackTrace();
+            }
+        }
+
+        // Clear screen and draw
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        renderSystem.render(entityManager.getEntities());
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        batch.draw(mapTexture, 0, 0);
+        renderSystem.render(batch, entityManager.getEntities());
+        batch.end();
     }
+
 
     private void handleInput() {
         VelocityComponent vel = player.getComponent(VelocityComponent.class);
@@ -106,6 +149,19 @@ public class GameScreen implements Screen {
         }
     }
 
+    private void clampCameraPosition() {
+        float halfWidth = camera.viewportWidth / 2f;
+        float halfHeight = camera.viewportHeight / 2f;
+
+        float minX = halfWidth;
+        float maxX = mapWidth - halfWidth;
+        float minY = halfHeight;
+        float maxY = mapHeight - halfHeight;
+
+        camera.position.x = Math.max(minX, Math.min(camera.position.x, maxX));
+        camera.position.y = Math.max(minY, Math.min(camera.position.y, maxY));
+    }
+
     @Override public void resize(int width, int height) {}
     @Override public void pause() {}
     @Override public void resume() {}
@@ -114,6 +170,10 @@ public class GameScreen implements Screen {
     @Override
     public void dispose() {
         batch.dispose();
+        shapeRenderer.dispose();
         playerTexture.dispose();
+        mapTexture.dispose();
     }
 }
+
+

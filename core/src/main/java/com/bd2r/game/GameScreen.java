@@ -3,9 +3,8 @@ package com.bd2r.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -18,7 +17,7 @@ import com.bd2r.game.ecs.systems.RenderSystem;
 import com.bd2r.game.factory.EntityFactory;
 import com.bd2r.game.pathfinder.AStarPathfinder;
 import com.bd2r.game.pathfinder.Node;
-
+import com.bd2r.game.Observer.ItemType;
 import java.util.List;
 
 public class GameScreen implements Screen {
@@ -47,12 +46,29 @@ public class GameScreen implements Screen {
     private GoldenKeyManager goldenKeyManager;
     private Texture goldenKeyTexture;
 
-    private Inventory inventory;
+    private final MainGame game;
+    private final Inventory inventory;
+    private BitmapFont font;
+    private Texture whitePixel;
+
+    public GameScreen(MainGame game) {
+        this.game = game;
+        this.inventory = game.getInventory();
+    }
 
     @Override
     public void show() {
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
+
+        //inventory = new Inventory();
+        font = new BitmapFont();
+        font.getData().setScale(1.0f);
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+        whitePixel = new Texture(pixmap);
+        pixmap.dispose();
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -77,21 +93,16 @@ public class GameScreen implements Screen {
 
         coinManager = new CoinManager();
         coinTexture = new Texture(Gdx.files.internal("coin.png"));
-
         coinManager.addCoin(new Coin(500, 100), this);
         coinManager.addCoin(new Coin(400, 150), this);
 
         silverKeyManager = new SilverKeyManager();
         silverKeyTexture = new Texture(Gdx.files.internal("House_Key.png"));
-
         silverKeyManager.addSilverKey(new SilverKey(500, 150), this);
 
         goldenKeyManager = new GoldenKeyManager();
         goldenKeyTexture = new Texture(Gdx.files.internal("Castle_Key.png"));
-
         goldenKeyManager.addGoldenKey(new GoldenKey(750, 150), this);
-
-        inventory = new Inventory();
 
         player = EntityFactory.createPlayer(485, 60, walkDownFrames[1]);
         player.addComponent(new AnimationComponent(walkUpFrames, 0.2f));
@@ -106,10 +117,21 @@ public class GameScreen implements Screen {
         player.getComponent(AnimationComponent.class).update(delta);
         PositionComponent pos = player.getComponent(PositionComponent.class);
 
+        //Inventory inventory = this.inventory;
+        coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
+        silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+        goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+
+
+
         // Center camera on player
         camera.position.set(pos.x + 16, pos.y + 16, 0);
         clampCameraPosition();
         camera.update();
+
+        // Clear screen and draw
+        Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         // CLICK TO MOVE
         if (Gdx.input.justTouched()) {
@@ -144,20 +166,37 @@ public class GameScreen implements Screen {
 
 
         // Clear screen and draw
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        //Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
+        //Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        batch.setColor(1, 1, 1, 1);
+        //batch.setColor(1, 1, 1, 1);
         batch.draw(mapTexture, 0, 0);
         renderSystem.render(batch, entityManager.getEntities());
-        coinManager.updateAndNotifyCoins(pos.x, pos.y);
+        coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
         coinManager.render(batch, coinTexture, delta);
-        silverKeyManager.updateAndNotifyKeys(pos.x, pos.y);
+        silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
         silverKeyManager.render(batch, silverKeyTexture, delta);
-        goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y);
+        goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
         goldenKeyManager.render(batch, goldenKeyTexture, delta);
+
+
+        //UI de inventário
+        int padding = 16;
+        int slotSize = 24;
+        int startX = Gdx.graphics.getWidth() - 200 - padding;
+        int startY = padding + slotSize *3;
+
+        batch.setColor(0f, 0f, 0f, 0.5f);
+        batch.draw(whitePixel, startX - padding, padding, 180, slotSize * 3 + padding);
+        batch.setColor(Color.WHITE);
+
+        font.draw(batch, "Inventário", startX, startY);
+        font.draw(batch, inventory.getItemCount(ItemType.COIN) + " x Coins", startX, startY - slotSize);
+        font.draw(batch, inventory.getItemCount(ItemType.SILVER_KEY) + " x Silver Keys", startX, startY - slotSize * 2);
+        font.draw(batch, inventory.getItemCount(ItemType.GOLDEN_KEY) + " x Golden Keys", startX, startY - slotSize * 3);
+
         batch.end();
     }
 
@@ -214,6 +253,8 @@ public class GameScreen implements Screen {
         coinManager.dispose();
         silverKeyManager.dispose();
         goldenKeyManager.dispose();
+        whitePixel.dispose();
+        font.dispose();
     }
 }
 

@@ -3,8 +3,10 @@ package com.bd2r.game.Observer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.bd2r.game.Inventory;
+import com.bd2r.game.Observer.ItemType;
 
-public class Coin implements Observer{
+public class Coin {
     private final float x, y;
 
     //Estado inicial da moeda
@@ -30,11 +32,12 @@ public class Coin implements Observer{
         this.y = y;
     }
 
-    @Override
-    public void update(float playerX, float playerY) {
+    //@Override
+    public void update(float playerX, float playerY, Inventory inventory) {
         if (!collected && isNear(playerX, playerY)) {
             collected = true;
             animationTime = 0f;
+            inventory.addItem(ItemType.COIN);
             System.out.println("Moeda apanhada.");
         }
     }
@@ -61,7 +64,6 @@ public class Coin implements Observer{
                 animationFinished = true;
                 System.out.println("🟢 Animação da moeda finalizada.");
             }
-
             //Efeitos da animação
             rotation = 360f * progress;
             scale = Math.max(0.01f, 1f - progress);

@@ -3,9 +3,9 @@ package com.bd2r.game.Observer;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.bd2r.game.GameScreen;
-
 import java.util.ArrayList;
 import java.util.List;
+import com.bd2r.game.Inventory;
 
 public class GoldenKeyManager {
     private final List<GoldenKey> goldenKeys = new ArrayList<>();
@@ -14,9 +14,9 @@ public class GoldenKeyManager {
         goldenKeys.add(goldenKey);
     }
 
-    public void updateAndNotifyKeys(float playerX, float playerY) {
+    public void updateAndNotifyKeys(float playerX, float playerY, Inventory inventory) {
         for (GoldenKey goldenKey : goldenKeys) {
-            goldenKey.update(playerX, playerY);
+            goldenKey.update(playerX, playerY, inventory);
         }
     }
 

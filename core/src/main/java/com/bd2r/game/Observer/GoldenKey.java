@@ -3,8 +3,10 @@ package com.bd2r.game.Observer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.bd2r.game.Inventory;
+import com.bd2r.game.Observer.ItemType;
 
-public class GoldenKey implements Observer{
+public class GoldenKey {
     private final float x, y;
 
     //Estado inicial da chave
@@ -30,11 +32,12 @@ public class GoldenKey implements Observer{
         this.y = y;
     }
 
-    @Override
-    public void update(float playerX, float playerY) {
+    //@Override
+    public void update(float playerX, float playerY, Inventory inventory) {
         if (!collected && isNear(playerX, playerY)) {
             collected = true;
             animationTime = 0f;
+            inventory.addItem(ItemType.GOLDEN_KEY);
             System.out.println("Chave apanhada.");
         }
     }

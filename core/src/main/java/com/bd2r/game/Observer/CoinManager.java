@@ -3,6 +3,7 @@ package com.bd2r.game.Observer;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.bd2r.game.GameScreen;
+import com.bd2r.game.Inventory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +16,9 @@ public class CoinManager {
         //player.registerObserver(coin);
     }
 
-    public void updateAndNotifyCoins(float playerX, float playerY) {
+    public void updateAndNotifyCoins(float playerX, float playerY, Inventory inventory) {
         for (Coin coin : coins) {
-            coin.update(playerX, playerY);
+            coin.update(playerX, playerY, inventory);
         }
     }
 

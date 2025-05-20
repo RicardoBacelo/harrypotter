@@ -21,6 +21,7 @@ public class Menu extends Game {
     @Override
     public void create() {
 
+        MainGame Game = new MainGame();
         // Load and play the music
         Music menuMusic = Gdx.audio.newMusic(Gdx.files.internal("music/StartMenuSong.mp3"));
         menuMusic.setLooping(true); // Makes the music loop
@@ -50,11 +51,15 @@ public class Menu extends Game {
         playButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                GameScreen gameScreen = new GameScreen();
+                // Stop menu music when starting game
+                menuMusic.stop();
+                GameScreen gameScreen = new GameScreen(Game);
                 setScreen(gameScreen);
-
+                // Set input processor back to null so the game can handle input
+                Gdx.input.setInputProcessor(null);
             }
         });
+
 
         // Exit button
         TextButton exitButton = new TextButton("Exit", skin);

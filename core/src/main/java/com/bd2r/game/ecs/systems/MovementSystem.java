@@ -21,9 +21,10 @@ public class MovementSystem {
             if (pos == null || vel == null) continue;
 
             if (path != null && !path.path.isEmpty()) {
-                Node target = path.path.get(0);
-                float targetX = target.x * TILE_SIZE;
-                float targetY = target.y * TILE_SIZE;
+                Node nextStep = path.path.get(0);
+                float targetX = nextStep.x * TILE_SIZE;
+                float targetY = nextStep.y * TILE_SIZE;
+
 
                 float dx = targetX - pos.x;
                 float dy = targetY - pos.y;
@@ -33,24 +34,47 @@ public class MovementSystem {
                     vel.vx = (dx / distance) * SPEED;
                     vel.vy = (dy / distance) * SPEED;
 
+                    // Update position
                     pos.x += vel.vx * delta;
                     pos.y += vel.vy * delta;
+
+
+                    // Check if we've reached the current waypoint
+                    float newDistance = (float) Math.sqrt(
+                        Math.pow(targetX - pos.x, 2) +
+                            Math.pow(targetY - pos.y, 2)
+                    );
+
+                    if (newDistance < 1f) {
+                        // Snap to waypoint position
+                        pos.x = targetX;
+                        pos.y = targetY;
+                        // Remove this waypoint as we've reached it
+                        path.path.remove(0);
+                    }
                 } else {
+                    // We're very close to waypoint, snap to it and remove it
                     pos.x = targetX;
                     pos.y = targetY;
-                    vel.vx = 0;
-                    vel.vy = 0;
                     path.path.remove(0);
                 }
-            } else {
-                // Movimento com teclas (sem path)
-                pos.x += vel.vx * delta;
-                pos.y += vel.vy * delta;
 
-                // LIMITA a posição ao tamanho do mapa
-                pos.x = Math.max(0, Math.min(pos.x, mapWidth - TILE_SIZE));
-                pos.y = Math.max(0, Math.min(pos.y, mapHeight - TILE_SIZE));
+                // If we've reached the end of the path, stop moving
+                    if (path.path.isEmpty()) {
+                        vel.vx = 0;
+                        vel.vy = 0;
+                    }
+                } else {
+                    // Regular movement without path
+                    pos.x += vel.vx * delta;
+                    pos.y += vel.vy * delta;
+
+                    // Clamp to map boundaries
+                    pos.x = Math.max(0, Math.min(pos.x, mapWidth - TILE_SIZE));
+                    pos.y = Math.max(0, Math.min(pos.y, mapHeight - TILE_SIZE));
+                }
+
             }
         }
     }
-}
+

@@ -10,33 +10,19 @@ import com.bd2r.game.ecs.components.SpriteComponent;
 import java.util.List;
 
 public class RenderSystem {
-
-    private final SpriteBatch batch;
-
-    public RenderSystem(SpriteBatch batch) {
-        this.batch = batch;
-    }
-
-    public void render(List<Entity> entities) {
-        batch.begin();
+    public void render(SpriteBatch batch, List<Entity> entities) {
         for (Entity entity : entities) {
-            if (entity.hasComponent(PositionComponent.class) &&
-                entity.hasComponent(SpriteComponent.class)) {
+            PositionComponent pos = entity.getComponent(PositionComponent.class);
+            SpriteComponent sprite = entity.getComponent(SpriteComponent.class);
+            AnimationComponent anim = entity.getComponent(AnimationComponent.class);
 
-                PositionComponent pos = entity.getComponent(PositionComponent.class);
-                SpriteComponent sprite = entity.getComponent(SpriteComponent.class);
-                TextureRegion region = sprite.region;
-
-                if (entity.hasComponent(AnimationComponent.class)) {
-                    AnimationComponent anim = entity.getComponent(AnimationComponent.class);
-                    region = anim.getCurrentFrame();
+            if (pos != null && sprite != null) {
+                if (anim != null) {
+                    sprite.region = anim.getCurrentFrame();
                 }
-
-                batch.draw(region, pos.x, pos.y);
+                batch.draw(sprite.region, pos.x, pos.y);
             }
         }
-
-        batch.end();
     }
 }
 

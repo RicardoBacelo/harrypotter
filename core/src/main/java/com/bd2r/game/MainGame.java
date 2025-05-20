@@ -13,6 +13,6 @@ public class MainGame extends Game {
     @Override
     public void create() {
         System.out.println("🟢 MainGame: iniciado");
-        setScreen(new GameScreen());
+        setScreen(new GameScreen(this));
     }
 }

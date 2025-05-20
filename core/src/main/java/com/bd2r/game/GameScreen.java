@@ -27,6 +27,7 @@ public class GameScreen implements Screen {
 
     private SpriteBatch batch;
     private Texture playerTexture;
+    private int mapWidth, mapHeight;
 
     private Entity player;
     public TextureRegion[] walkUpFrames, walkDownFrames, walkLeftFrames, walkRightFrames;
@@ -71,7 +72,7 @@ public class GameScreen implements Screen {
     public void render(float delta) {
         handleInput();
 
-        movementSystem.update(entityManager.getEntities(), delta);
+        movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight );
 
         player.getComponent(AnimationComponent.class).update(delta);
 

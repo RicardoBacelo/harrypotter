@@ -2,7 +2,7 @@ package com.bd2r.game.Observer;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.bd2r.game.GameScreen;
+import Screens.GameScreen;
 import com.bd2r.game.Inventory;
 import java.util.ArrayList;
 import java.util.List;

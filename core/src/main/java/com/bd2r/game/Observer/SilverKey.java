@@ -18,7 +18,7 @@ public class SilverKey {
     public static final float SILVERKEY_HEIGHT = 32f;
 
     //Colisão no centro da chave
-    private static float radius = SILVERKEY_WIDTH / 2f;
+    private static float radius = SILVERKEY_WIDTH;
 
     // Animação
     private float rotation = 0f;
@@ -43,8 +43,8 @@ public class SilverKey {
     }
 
     private boolean isNear(float playerX, float playerY) {
-        float dx = playerX - (x + SILVERKEY_WIDTH / 2);
-        float dy = playerY - (y + SILVERKEY_HEIGHT / 2);
+        float dx = playerX - (x + SILVERKEY_WIDTH);
+        float dy = playerY - (y + SILVERKEY_HEIGHT);
         return Math.sqrt(dx * dx + dy * dy) <= radius;
     }
 

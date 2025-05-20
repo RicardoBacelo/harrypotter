@@ -1,29 +1,31 @@
-package com.bd2r.game;
+package Screens;
 
-import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.bd2r.game.MainGame;
 
-public class Menu extends Game {
+public class MenuScreen implements Screen {
+    private final MainGame game;
     private Stage stage;
     private Skin skin;
+    private Music menuMusic;
 
 
+    public MenuScreen(MainGame game) {  // Add constructor
+        this.game = game;
+    }
     @Override
-    public void create() {
+    public void show() {
 
-        MainGame Game = new MainGame();
         // Load and play the music
-        Music menuMusic = Gdx.audio.newMusic(Gdx.files.internal("music/StartMenuSong.mp3"));
+        menuMusic = Gdx.audio.newMusic(Gdx.files.internal("music/StartMenuSong.mp3"));
         menuMusic.setLooping(true); // Makes the music loop
         menuMusic.setVolume(0.5f); // Sets volume to 50%
         menuMusic.play();
@@ -53,9 +55,7 @@ public class Menu extends Game {
             public void clicked(InputEvent event, float x, float y) {
                 // Stop menu music when starting game
                 menuMusic.stop();
-                GameScreen gameScreen = new GameScreen(Game);
-                setScreen(gameScreen);
-                // Set input processor back to null so the game can handle input
+                game.setScreen(new GameScreen(game));
                 Gdx.input.setInputProcessor(null);
             }
         });
@@ -82,31 +82,47 @@ public class Menu extends Game {
         Label versionLabel = new Label("v1.0", skin);
         mainTable.add(versionLabel).padTop(50).row();
     }
-
     @Override
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
     }
 
     @Override
-    public void render() {
-        if (screen != null) {
-            super.render(); // This will render the current screen
-        } else {
+    public void pause() {
 
-            // Clear screen with a dark background
-            Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
-            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    }
 
-            float delta = Gdx.graphics.getDeltaTime();
-            stage.act(delta);
-            stage.draw();
-        }
+    @Override
+    public void resume() {
+
+    }
+
+    @Override
+    public void hide() {
+
+    }
+
+    @Override
+    public void render(float delta) {
+        Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        stage.act(delta);
+        stage.draw();
+
     }
 
     @Override
     public void dispose() {
-        stage.dispose();
-        skin.dispose();
+        if (stage != null) {
+            stage.dispose();
+        }
+        if (skin != null) {
+            skin.dispose();
+        }
+        if (menuMusic != null) {
+            menuMusic.dispose();
+        }
+
     }
 }

@@ -1,4 +1,4 @@
-package com.bd2r.game;
+package Screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -8,6 +8,9 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.bd2r.game.Inventory;
+import com.bd2r.game.MainGame;
+import com.bd2r.game.MapLoader;
 import com.bd2r.game.Observer.*;
 import com.bd2r.game.ecs.Entity;
 import com.bd2r.game.ecs.EntityManager;
@@ -21,6 +24,7 @@ import com.bd2r.game.factory.EntityFactory;
 import com.bd2r.game.pathfinder.AStarPathfinder;
 import com.bd2r.game.pathfinder.Node;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class GameScreen implements Screen {
@@ -52,9 +56,13 @@ public class GameScreen implements Screen {
     private final Inventory inventory;
     private BitmapFont font;
     private Texture whitePixel;
+    private final MainGame game;
+
 
     public GameScreen(MainGame game) {
+        this.game = game;  // Store the passed game instance
         this.inventory = game.getInventory();
+
     }
 
     @Override
@@ -87,10 +95,10 @@ public class GameScreen implements Screen {
 
 // Cada linha tem 32 de altura, cada coluna 32 de largura
         for (int i = 0; i < 3; i++) {
-            walkDownFrames[i]    = new TextureRegion(playerTexture, i * 32, 0,   32, 32);  // linha 1
-            walkLeftFrames[i] = new TextureRegion(playerTexture, i * 32, 32,  32, 32);  // linha 2
-            walkRightFrames[i]  = new TextureRegion(playerTexture, i * 32, 64,  32, 32);  // linha 3
-            walkUpFrames[i]  = new TextureRegion(playerTexture, i * 32, 96,  32, 32);  // linha 4
+            walkDownFrames[i] = new TextureRegion(playerTexture, i * 32, 0, 32, 32);  // linha 1
+            walkLeftFrames[i] = new TextureRegion(playerTexture, i * 32, 32, 32, 32);  // linha 2
+            walkRightFrames[i] = new TextureRegion(playerTexture, i * 32, 64, 32, 32);  // linha 3
+            walkUpFrames[i] = new TextureRegion(playerTexture, i * 32, 96, 32, 32);  // linha 4
         }
 
         coinManager = new CoinManager();
@@ -113,6 +121,8 @@ public class GameScreen implements Screen {
 
     @Override
     public void render(float delta) {
+        try {
+
         handleInput();
         movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
 
@@ -123,7 +133,6 @@ public class GameScreen implements Screen {
         coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
         silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
         goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-
 
 
         // Center camera on player
@@ -139,8 +148,8 @@ public class GameScreen implements Screen {
         if (Gdx.input.justTouched()) {
             try {
                 // Convert screen to world coords
-                float worldX = camera.position.x - camera.viewportWidth/2 + Gdx.input.getX();
-                float worldY = camera.position.y + camera.viewportHeight/2 - Gdx.input.getY();
+                float worldX = camera.position.x - camera.viewportWidth / 2 + Gdx.input.getX();
+                float worldY = camera.position.y + camera.viewportHeight / 2 - Gdx.input.getY();
 
                 // Convert to tile coordinates
                 int tileX = (int) (worldX / TILE_SIZE);
@@ -166,9 +175,11 @@ public class GameScreen implements Screen {
                     }
                     // Update the path
                     pathComp.setPath(path);
+
                 } else {
                     System.out.println("⚠️ No path found.");
                 }
+
 
 
             } catch (Exception e) {
@@ -178,6 +189,7 @@ public class GameScreen implements Screen {
         }
         batch.begin();
 
+            checkTriggers(pos.x, pos.y);
         // Draw game world elements first
         batch.draw(mapTexture, 0, 0);
         renderSystem.render(batch, entityManager.getEntities());
@@ -197,8 +209,8 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
 
 // Calculate inventory position relative to camera
-        float inventoryX = camera.position.x + (camera.viewportWidth/2) - 200;
-        float inventoryY = camera.position.y - (camera.viewportHeight/2) + 100;
+        float inventoryX = camera.position.x + (camera.viewportWidth / 2) - 200;
+        float inventoryY = camera.position.y - (camera.viewportHeight / 2) + 100;
 
 // Draw inventory background
         batch.setColor(0f, 0f, 0f, 0.5f);
@@ -216,6 +228,9 @@ public class GameScreen implements Screen {
             inventoryX, inventoryY - 72);
 
         batch.end();
+        } catch (Exception e) {
+            Gdx.app.error("GameScreen", "Error in render", e);
+        }
 
     }
 
@@ -255,6 +270,31 @@ public class GameScreen implements Screen {
 
         camera.position.x = Math.max(minX, Math.min(camera.position.x, maxX));
         camera.position.y = Math.max(minY, Math.min(camera.position.y, maxY));
+    }
+
+    private void checkTriggers(float x, float y) {
+        // Convert world coordinates to tile coordinates
+        int tileX = (int) (x / TILE_SIZE);
+        int tileY = (int) (y / TILE_SIZE);
+
+        PathComponent pathComp = player.getComponent(PathComponent.class);
+        if (pathComp != null && pathComp.path.isEmpty() && tileX == 16 && tileY == 5) {
+            // End the current batch if it's active
+            if (batch.isDrawing()) {
+                batch.end();
+            }
+
+            // Create new screen
+            Screen newScreen = new HagridHouseScreen(game);
+
+            // Set the new screen first
+            game.setScreen(newScreen);
+
+            // Dispose after setting new screen
+            dispose();
+
+
+        }
     }
 
     @Override public void resize(int width, int height) {}

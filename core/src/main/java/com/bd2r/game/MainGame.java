@@ -1,5 +1,7 @@
 package com.bd2r.game;
 
+import Screens.GameScreen;
+import Screens.MenuScreen;
 import com.badlogic.gdx.Game;
 
 public class MainGame extends Game {
@@ -13,6 +15,6 @@ public class MainGame extends Game {
     @Override
     public void create() {
         System.out.println("🟢 MainGame: iniciado");
-        setScreen(new GameScreen(this));
+        setScreen(new MenuScreen(this));
     }
 }

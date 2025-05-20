@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.bd2r.game.Observer.*;
 import com.bd2r.game.ecs.Entity;
 import com.bd2r.game.ecs.EntityManager;
 import com.bd2r.game.ecs.components.*;
@@ -34,9 +35,19 @@ public class GameScreen implements Screen {
     private TextureRegion[] walkUpFrames, walkDownFrames, walkLeftFrames, walkRightFrames;
 
     private OrthographicCamera camera;
-
     private static final int TILE_SIZE = 32;
     private int mapWidth, mapHeight;
+
+    private CoinManager coinManager;
+    private Texture coinTexture;
+
+    private SilverKeyManager silverKeyManager;
+    private Texture silverKeyTexture;
+
+    private GoldenKeyManager goldenKeyManager;
+    private Texture goldenKeyTexture;
+
+    private Inventory inventory;
 
     @Override
     public void show() {
@@ -63,6 +74,24 @@ public class GameScreen implements Screen {
             walkRightFrames[i] = new TextureRegion(playerTexture, i * 32, 64, 32, 32);
             walkUpFrames[i]    = new TextureRegion(playerTexture, i * 32, 96, 32, 32);
         }
+
+        coinManager = new CoinManager();
+        coinTexture = new Texture(Gdx.files.internal("coin.png"));
+
+        coinManager.addCoin(new Coin(500, 100), this);
+        coinManager.addCoin(new Coin(400, 150), this);
+
+        silverKeyManager = new SilverKeyManager();
+        silverKeyTexture = new Texture(Gdx.files.internal("House_Key.png"));
+
+        silverKeyManager.addSilverKey(new SilverKey(500, 150), this);
+
+        goldenKeyManager = new GoldenKeyManager();
+        goldenKeyTexture = new Texture(Gdx.files.internal("Castle_Key.png"));
+
+        goldenKeyManager.addGoldenKey(new GoldenKey(750, 150), this);
+
+        inventory = new Inventory();
 
         player = EntityFactory.createPlayer(485, 60, walkDownFrames[1]);
         player.addComponent(new AnimationComponent(walkUpFrames, 0.2f));
@@ -112,14 +141,23 @@ public class GameScreen implements Screen {
             }
         }
 
+
+
         // Clear screen and draw
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+        batch.setColor(1, 1, 1, 1);
         batch.draw(mapTexture, 0, 0);
         renderSystem.render(batch, entityManager.getEntities());
+        coinManager.updateAndNotifyCoins(pos.x, pos.y);
+        coinManager.render(batch, coinTexture, delta);
+        silverKeyManager.updateAndNotifyKeys(pos.x, pos.y);
+        silverKeyManager.render(batch, silverKeyTexture, delta);
+        goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y);
+        goldenKeyManager.render(batch, goldenKeyTexture, delta);
         batch.end();
     }
 
@@ -173,6 +211,9 @@ public class GameScreen implements Screen {
         shapeRenderer.dispose();
         playerTexture.dispose();
         mapTexture.dispose();
+        coinManager.dispose();
+        silverKeyManager.dispose();
+        goldenKeyManager.dispose();
     }
 }
 

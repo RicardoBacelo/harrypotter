@@ -6,7 +6,9 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.bd2r.game.Inventory;
 import com.bd2r.game.MainGame;
+import com.bd2r.game.Observer.ItemType;
 import com.bd2r.game.ecs.EntityManager;
 import com.bd2r.game.ecs.systems.RenderSystem;
 
@@ -18,7 +20,6 @@ public class HagridHouseScreen implements Screen{
     private final RenderSystem renderSystem;
     private final EntityManager entityManager;
     private int mapWidth, mapHeight;
-
 
     public HagridHouseScreen(MainGame game) {
         this.game = game;
@@ -41,7 +42,6 @@ public class HagridHouseScreen implements Screen{
             renderSystem.render(batch, entityManager.getEntities());
             batch.end();
         }
-
     }
 
     @Override

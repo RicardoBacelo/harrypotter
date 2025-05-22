@@ -2,8 +2,7 @@ package com.bd2r.game.lwjgl3;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import Screens.MenuScreen;
-import com.bd2r.game.MainGame;
+import core.MainGame;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {

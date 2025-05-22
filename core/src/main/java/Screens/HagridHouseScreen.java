@@ -6,9 +6,9 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.bd2r.game.MainGame;
-import com.bd2r.game.ecs.EntityManager;
-import com.bd2r.game.ecs.systems.RenderSystem;
+import core.MainGame;
+import ecs.EntityManager;
+import ecs.systems.RenderSystem;
 
 public class HagridHouseScreen implements Screen{
     private final MainGame game;

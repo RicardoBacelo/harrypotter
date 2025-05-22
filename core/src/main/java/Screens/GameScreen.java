@@ -26,21 +26,23 @@ import com.bd2r.game.pathfinder.AStarPathfinder;
 import com.bd2r.game.pathfinder.Node;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class GameScreen implements Screen {
 
+    //Gestão das entidades e sistemas do jogo
     private final EntityManager entityManager = new EntityManager();
     private final MovementSystem movementSystem = new MovementSystem();
     private final RenderSystem renderSystem = new RenderSystem();
 
+    //Recursos gráficos e texturas do jogo
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
     private Texture playerTexture, mapTexture;
 
+    //Jogador e respetivas animações de movimentos
     private Entity player;
     private TextureRegion[] walkUpFrames, walkDownFrames, walkLeftFrames, walkRightFrames;
 
@@ -48,12 +50,11 @@ public class GameScreen implements Screen {
     private static final int TILE_SIZE = 32;
     private int mapWidth, mapHeight;
 
+    //Gestão de itens e texturas
     private CoinManager coinManager;
     private Texture coinTexture;
-
     private SilverKeyManager silverKeyManager;
     private Texture silverKeyTexture;
-
     private GoldenKeyManager goldenKeyManager;
     private Texture goldenKeyTexture;
 
@@ -61,22 +62,24 @@ public class GameScreen implements Screen {
     private Texture coinIcon, silverKeyIcon, goldenKeyIcon;
     private BitmapFont font;
     private Texture whitePixel;
-    private final Map<Point, Screen> triggers = new HashMap<>();
+
+    private final Map<Point, Screen> triggers = new HashMap<>(); //Triggers de troca de tela
     private final MainGame game;
 
-
+    //Contrutor da classe GameScreen
     public GameScreen(MainGame game) {
         this.game = game;  // Store the passed game instance
         this.inventory = game.getInventory();
 
     }
 
+    //Mostra os recursos do ecra de jogo
     @Override
     public void show() {
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
 
-        //inventory = new Inventory();
+        //Fonts
         font = new BitmapFont();
         font.getData().setScale(1.0f);
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -88,6 +91,7 @@ public class GameScreen implements Screen {
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
+        //Carrega mapa
         mapTexture = new Texture(Gdx.files.internal("mundo.png"));
         mapWidth = mapTexture.getWidth();
         mapHeight = mapTexture.getHeight();
@@ -111,19 +115,23 @@ public class GameScreen implements Screen {
             walkUpFrames[i] = new TextureRegion(playerTexture, i * 32, 96, 32, 32);  // linha 4
         }
 
+        //Adiciona moedas no mapa
         coinManager = new CoinManager();
         coinTexture = new Texture(Gdx.files.internal("coin.png"));
         coinManager.addCoin(new Coin(500, 100), this);
         coinManager.addCoin(new Coin(400, 150), this);
 
+        //Adiciona chave prateada no mapa
         silverKeyManager = new SilverKeyManager();
         silverKeyTexture = new Texture(Gdx.files.internal("House_Key.png"));
         silverKeyManager.addSilverKey(new SilverKey(500, 150), this);
 
+        //Adiciona chave dourada no mapa
         goldenKeyManager = new GoldenKeyManager();
         goldenKeyTexture = new Texture(Gdx.files.internal("Castle_Key.png"));
         goldenKeyManager.addGoldenKey(new GoldenKey(750, 150), this);
 
+        //Indica asset para as texturas do itens
         coinIcon = new Texture(Gdx.files.internal("coin.png"));
         silverKeyIcon = new Texture(Gdx.files.internal("House_Key.png"));
         goldenKeyIcon = new Texture(Gdx.files.internal("Castle_Key.png"));
@@ -147,7 +155,6 @@ public class GameScreen implements Screen {
             coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
             silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
             goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-
 
             // Center camera on player
             camera.position.set(pos.x + 16, pos.y + 16, 0);
@@ -193,8 +200,6 @@ public class GameScreen implements Screen {
                     } else {
                         System.out.println("⚠️ No path found.");
                     }
-
-
 
                 } catch (Exception e) {
                     System.err.println("❌ Error on mouse click:");
@@ -245,8 +250,7 @@ public class GameScreen implements Screen {
             font.draw(batch,"x "+inventory.getItemCount(ItemType.GOLDEN_KEY),
                 inventoryX+iconSize+paddingY,
                 inventoryY-iconSize*2.5f-16+6);
-
-
+            
             batch.end();
         } catch (Exception e) {
             Gdx.app.error("GameScreen", "Error in render", e);

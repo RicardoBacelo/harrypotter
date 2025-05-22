@@ -4,35 +4,37 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.bd2r.game.Inventory;
-import com.bd2r.game.Observer.ItemType;
+
 
 public class Coin {
+    //Posição da moeda no mapa
     private final float x, y;
 
     //Estado inicial da moeda
     private boolean collected = false;
     private boolean animationFinished = false;
 
-    //Definição do tamanho da moeda
+    //Tamanho da moeda
     public static final float COIN_WIDTH = 32f;
     public static final float COIN_HEIGHT = 32f;
 
     //Colisão no centro da moeda
     private static float radius = COIN_WIDTH / 2f;
 
-    // Animação
+    // Animação ao apanhar moeda
     private float rotation = 0f;
     private float scale = 1f;
     private float alpha = 1f;
     private float animationTime = 0f;
     private final float animationDuration = 0.5f; // 0.5 segundos
 
+    // Construtor que define a posição da moeda
     public Coin(float x, float y) {
         this.x = x;
         this.y = y;
     }
 
-    //@Override
+    //Atualização do estado da moeda
     public void update(float playerX, float playerY, Inventory inventory) {
         if (!collected && isNear(playerX, playerY)) {
             collected = true;
@@ -42,6 +44,7 @@ public class Coin {
         }
     }
 
+    // Verifica se o jogador está suficientemente perto da moeda
     private boolean isNear(float playerX, float playerY) {
         float dx = playerX - (x + COIN_WIDTH / 2);
         float dy = playerY - (y + COIN_HEIGHT / 2);
@@ -87,10 +90,12 @@ public class Coin {
         batch.setColor(originalColor);
     }
 
+    //Verifica se a moeda foi apanhada
     public boolean isCollected() {
         return collected;
     }
 
+    //Verifica se a animação da moeda terminou
     public boolean isAnimationFinished() {
         return animationFinished;
     }

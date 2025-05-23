@@ -285,7 +285,7 @@ public class GameScreen implements Screen {
             }
 
             // Create new screen
-            Screen newScreen = new HagridHouseScreen(game);
+            Screen newScreen = new HagridHouseScreen(game, player);
 
             // Set the new screen first
             game.setScreen(newScreen);

@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -24,8 +25,11 @@ import com.bd2r.game.factory.EntityFactory;
 import com.bd2r.game.pathfinder.AStarPathfinder;
 import com.bd2r.game.pathfinder.Node;
 
+import java.awt.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GameScreen implements Screen {
 
@@ -54,8 +58,10 @@ public class GameScreen implements Screen {
     private Texture goldenKeyTexture;
 
     private final Inventory inventory;
+    private Texture coinIcon, silverKeyIcon, goldenKeyIcon;
     private BitmapFont font;
     private Texture whitePixel;
+    private final Map<Point, Screen> triggers = new HashMap<>();
     private final MainGame game;
 
 
@@ -86,6 +92,10 @@ public class GameScreen implements Screen {
         mapWidth = mapTexture.getWidth();
         mapHeight = mapTexture.getHeight();
 
+        // 1) Registo dos triggers em tiles (xTile, yTile → new Screen)
+        triggers.put(new Point(16, 5), new HagridHouseScreen(game));
+        //Adicionar os triggers necessários
+
         playerTexture = new Texture(Gdx.files.internal("hero1.png"));
 
         walkUpFrames = new TextureRegion[3];
@@ -114,6 +124,10 @@ public class GameScreen implements Screen {
         goldenKeyTexture = new Texture(Gdx.files.internal("Castle_Key.png"));
         goldenKeyManager.addGoldenKey(new GoldenKey(750, 150), this);
 
+        coinIcon = new Texture(Gdx.files.internal("coin.png"));
+        silverKeyIcon = new Texture(Gdx.files.internal("House_Key.png"));
+        goldenKeyIcon = new Texture(Gdx.files.internal("Castle_Key.png"));
+
         player = EntityFactory.createPlayer(485, 60, walkDownFrames[1]);
         player.addComponent(new AnimationComponent(walkUpFrames, 0.2f));
         entityManager.addEntity(player);
@@ -123,111 +137,117 @@ public class GameScreen implements Screen {
     public void render(float delta) {
         try {
 
-        handleInput();
-        movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
+            handleInput();
+            movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
 
-        player.getComponent(AnimationComponent.class).update(delta);
-        PositionComponent pos = player.getComponent(PositionComponent.class);
+            player.getComponent(AnimationComponent.class).update(delta);
+            PositionComponent pos = player.getComponent(PositionComponent.class);
 
-        //Inventory inventory = this.inventory;
-        coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
-        silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-        goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+            //Inventory inventory = this.inventory;
+            coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
+            silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+            goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
 
 
-        // Center camera on player
-        camera.position.set(pos.x + 16, pos.y + 16, 0);
-        clampCameraPosition();
-        camera.update();
+            // Center camera on player
+            camera.position.set(pos.x + 16, pos.y + 16, 0);
+            clampCameraPosition();
+            camera.update();
 
-        // Clear screen and draw
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            // Clear screen and draw
+            Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // CLICK TO MOVE
-        if (Gdx.input.justTouched()) {
-            try {
-                // Convert screen to world coords
-                float worldX = camera.position.x - camera.viewportWidth / 2 + Gdx.input.getX();
-                float worldY = camera.position.y + camera.viewportHeight / 2 - Gdx.input.getY();
+            // CLICK TO MOVE
+            if (Gdx.input.justTouched()) {
+                try {
+                    // Convert screen to world coords
+                    float worldX = camera.position.x - camera.viewportWidth / 2 + Gdx.input.getX();
+                    float worldY = camera.position.y + camera.viewportHeight / 2 - Gdx.input.getY();
 
-                // Convert to tile coordinates
-                int tileX = (int) (worldX / TILE_SIZE);
-                int tileY = (int) (worldY / TILE_SIZE);
+                    // Convert to tile coordinates
+                    int tileX = (int) (worldX / TILE_SIZE);
+                    int tileY = (int) (worldY / TILE_SIZE);
 
-                int startX = (int) (pos.x / TILE_SIZE);
-                int startY = (int) (pos.y / TILE_SIZE);
+                    int startX = (int) (pos.x / TILE_SIZE);
+                    int startY = (int) (pos.y / TILE_SIZE);
 
-                System.out.println("🖱️ Clicked tile: " + tileX + "," + tileY);
-                System.out.println("👣 Player at tile: " + startX + "," + startY);
+                    System.out.println("🖱️ Clicked tile: " + tileX + "," + tileY);
+                    System.out.println("👣 Player at tile: " + startX + "," + startY);
 
-                AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("mapa.txt")); // path corrected
-                List<Node> path = pathfinder.findPath(startX, startY, tileX, tileY);
+                    AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("mapa.txt")); // path corrected
+                    List<Node> path = pathfinder.findPath(startX, startY, tileX, tileY);
 
-                if (path != null && !path.isEmpty()) {
-                    System.out.println("✅ Path found! " + path.size() + " steps.");
-                    // Check if PathComponent already exists
-                    PathComponent pathComp = player.getComponent(PathComponent.class);
-                    if (pathComp == null) {
-                        // If it doesn't exist, create new one
-                        pathComp = new PathComponent();
-                        player.addComponent(pathComp);
+                    if (path != null && !path.isEmpty()) {
+                        System.out.println("✅ Path found! " + path.size() + " steps.");
+                        // Check if PathComponent already exists
+                        PathComponent pathComp = player.getComponent(PathComponent.class);
+                        if (pathComp == null) {
+                            // If it doesn't exist, create new one
+                            pathComp = new PathComponent();
+                            player.addComponent(pathComp);
+                        }
+                        // Update the path
+                        pathComp.setPath(path);
+
+                    } else {
+                        System.out.println("⚠️ No path found.");
                     }
-                    // Update the path
-                    pathComp.setPath(path);
 
-                } else {
-                    System.out.println("⚠️ No path found.");
+
+
+                } catch (Exception e) {
+                    System.err.println("❌ Error on mouse click:");
+                    e.printStackTrace();
                 }
-
-
-
-            } catch (Exception e) {
-                System.err.println("❌ Error on mouse click:");
-                e.printStackTrace();
             }
-        }
-        batch.begin();
+            batch.begin();
 
             checkTriggers(pos.x, pos.y);
-        // Draw game world elements first
-        batch.draw(mapTexture, 0, 0);
-        renderSystem.render(batch, entityManager.getEntities());
-        coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
-        coinManager.render(batch, coinTexture, delta);
-        silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-        silverKeyManager.render(batch, silverKeyTexture, delta);
-        goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-        goldenKeyManager.render(batch, goldenKeyTexture, delta);
+            // Draw game world elements first
+            batch.draw(mapTexture, 0, 0);
+            renderSystem.render(batch, entityManager.getEntities());
+            coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
+            coinManager.render(batch, coinTexture, delta);
+            silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+            silverKeyManager.render(batch, silverKeyTexture, delta);
+            goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+            goldenKeyManager.render(batch, goldenKeyTexture, delta);
 
 // End the world space batch and start a new one for UI
-        batch.end();
+            batch.end();
 
 // Start new batch for UI elements that follow the camera
-        batch.begin();
+            batch.begin();
 // Reset the projection matrix to screen coordinates
-        batch.setProjectionMatrix(camera.combined);
+            batch.setProjectionMatrix(camera.combined);
 
 // Calculate inventory position relative to camera
-        float inventoryX = camera.position.x + (camera.viewportWidth / 2) - 200;
-        float inventoryY = camera.position.y - (camera.viewportHeight / 2) + 100;
+            float inventoryX = camera.position.x + (camera.viewportWidth / 2) - 200;
+            float inventoryY = camera.position.y - (camera.viewportHeight / 2) + 100;
+            int iconSize = 24;
+            float paddingY = 4f;
 
-// Draw inventory background
-        batch.setColor(0f, 0f, 0f, 0.5f);
-        batch.draw(whitePixel, inventoryX - 16, inventoryY - 88, 180, 100);
-        batch.setColor(Color.WHITE);
+            // 1) Moeda
+            batch.draw(coinIcon,inventoryX,inventoryY-iconSize, iconSize, iconSize);
+            font.draw(batch,"x "+inventory.getItemCount(ItemType.COIN),
+                inventoryX+iconSize+paddingY,
+                inventoryY-iconSize/2f+6);
+
+// 2) Chave prata
+            batch.draw(silverKeyIcon, inventoryX,inventoryY-iconSize*2-8, iconSize, iconSize);
+            font.draw(batch,"x "+inventory.getItemCount(ItemType.SILVER_KEY),
+                inventoryX+iconSize+paddingY,
+                inventoryY-iconSize*1.5f-8+6);
+
+// 3) Chave dourada
+            batch.draw(goldenKeyIcon, inventoryX,inventoryY-iconSize*3-16, iconSize, iconSize);
+            font.draw(batch,"x "+inventory.getItemCount(ItemType.GOLDEN_KEY),
+                inventoryX+iconSize+paddingY,
+                inventoryY-iconSize*2.5f-16+6);
 
 
-        // Draw inventory text
-        font.draw(batch, "Inventário", inventoryX, inventoryY);
-        font.draw(batch, inventory.getItemCount(ItemType.COIN) + " x Coins",
-            inventoryX, inventoryY - 24);
-        font.draw(batch, inventory.getItemCount(ItemType.SILVER_KEY) + " x Silver Keys",
-            inventoryX, inventoryY - 48);
-        font.draw(batch, inventory.getItemCount(ItemType.GOLDEN_KEY) + " x Golden Keys",
-            inventoryX, inventoryY - 72);
-
-        batch.end();
+            batch.end();
         } catch (Exception e) {
             Gdx.app.error("GameScreen", "Error in render", e);
         }
@@ -277,8 +297,9 @@ public class GameScreen implements Screen {
         int tileX = (int) (x / TILE_SIZE);
         int tileY = (int) (y / TILE_SIZE);
 
+
         PathComponent pathComp = player.getComponent(PathComponent.class);
-        if (pathComp != null && pathComp.path.isEmpty() && tileX == 16 && tileY == 5) {
+        if (pathComp != null && pathComp.path.isEmpty() && triggers.containsKey(new Point(tileX, tileY))) {
             // End the current batch if it's active
             if (batch.isDrawing()) {
                 batch.end();
@@ -311,6 +332,9 @@ public class GameScreen implements Screen {
         coinManager.dispose();
         silverKeyManager.dispose();
         goldenKeyManager.dispose();
+        coinIcon.dispose();
+        silverKeyIcon.dispose();
+        goldenKeyIcon.dispose();
         whitePixel.dispose();
         font.dispose();
     }

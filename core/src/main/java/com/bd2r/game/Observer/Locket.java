@@ -3,8 +3,8 @@ package com.bd2r.game.Observer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.bd2r.game.Inventory;
-import com.bd2r.game.Observer.ItemType;
+import ui.Inventory;
+import observer.ItemType;
 
 public class Locket {
     private final float x, y;

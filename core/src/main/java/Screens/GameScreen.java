@@ -9,21 +9,28 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.bd2r.game.Inventory;
-import com.bd2r.game.MainGame;
-import com.bd2r.game.MapLoader;
+import items.Coin;
+import items.GoldenKey;
+import items.SilverKey;
+import observer.ItemType;
+import observer.managers.CoinManager;
+import observer.managers.GoldenKeyManager;
+import observer.managers.SilverKeyManager;
+import ui.Inventory;
+import core.MainGame;
+import World.map.MapLoader;
 import com.bd2r.game.Observer.*;
-import com.bd2r.game.ecs.Entity;
-import com.bd2r.game.ecs.EntityManager;
-import com.bd2r.game.ecs.components.AnimationComponent;
-import com.bd2r.game.ecs.components.PathComponent;
-import com.bd2r.game.ecs.components.PositionComponent;
-import com.bd2r.game.ecs.components.VelocityComponent;
-import com.bd2r.game.ecs.systems.MovementSystem;
-import com.bd2r.game.ecs.systems.RenderSystem;
-import com.bd2r.game.factory.EntityFactory;
-import com.bd2r.game.pathfinder.AStarPathfinder;
-import com.bd2r.game.pathfinder.Node;
+import ecs.Entity;
+import ecs.EntityManager;
+import ecs.components.AnimationComponent;
+import ecs.components.PathComponent;
+import ecs.components.PositionComponent;
+import ecs.components.VelocityComponent;
+import ecs.systems.MovementSystem;
+import ecs.systems.RenderSystem;
+import factory.EntityFactory;
+import World.pathfinding.AStarPathfinder;
+import World.pathfinding.Node;
 
 import java.awt.*;
 import java.util.HashMap;
@@ -250,7 +257,7 @@ public class GameScreen implements Screen {
             font.draw(batch,"x "+inventory.getItemCount(ItemType.GOLDEN_KEY),
                 inventoryX+iconSize+paddingY,
                 inventoryY-iconSize*2.5f-16+6);
-            
+
             batch.end();
         } catch (Exception e) {
             Gdx.app.error("GameScreen", "Error in render", e);

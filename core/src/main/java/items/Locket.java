@@ -1,4 +1,4 @@
-package com.bd2r.game.Observer;
+package items;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;

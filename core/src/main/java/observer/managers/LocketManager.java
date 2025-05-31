@@ -1,8 +1,9 @@
-package com.bd2r.game.Observer;
+package observer.managers;
 
 import Screens.HagridHouseScreen;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import items.Locket;
 import ui.Inventory;
 
 import java.util.ArrayList;

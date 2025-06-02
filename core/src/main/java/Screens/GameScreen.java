@@ -19,7 +19,7 @@ import observer.managers.SilverKeyManager;
 import ui.Inventory;
 import core.MainGame;
 import World.map.MapLoader;
-import com.bd2r.game.Observer.*;
+import items.Locket;
 import ecs.Entity;
 import ecs.EntityManager;
 import ecs.components.AnimationComponent;
@@ -235,7 +235,7 @@ public class GameScreen implements Screen {
             batch.setProjectionMatrix(camera.combined);
 
 // Calculate inventory position relative to camera
-            float inventoryX = camera.position.x + (camera.viewportWidth / 2) - 200;
+            float inventoryX = camera.position.x + (camera.viewportWidth / 2) - 100;
             float inventoryY = camera.position.y - (camera.viewportHeight / 2) + 100;
             int iconSize = 24;
             float paddingY = 4f;

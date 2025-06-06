@@ -15,18 +15,22 @@ import factory.EntityFactory;
 import jdk.internal.org.jline.terminal.Size;
 import observer.ItemType;
 import observer.managers.LocketManager;
+import org.w3c.dom.Text;
 import ui.Inventory;
 import items.Locket;  // Certifique-se de usar este import exato
 import ecs.Entity;
 
 public class HagridHouseScreen implements Screen {
-    private final MainGame game;
-    private final EntityManager entityManager;
-    private final RenderSystem renderSystem;
 
     // Batch e Câmera
     private SpriteBatch batch;
     private OrthographicCamera camera;
+    private static final int TILE_SIZE = 32;
+
+    private final MainGame game;
+    private final EntityManager entityManager;
+    private final RenderSystem renderSystem;
+
 
     // Texturas do mundo e do player
     private Texture mapTexture;
@@ -37,6 +41,7 @@ public class HagridHouseScreen implements Screen {
     private Texture coinIcon;
     private Texture silverKeyIcon;
     private Texture goldenKeyIcon;
+    private Texture locketIcon;
     private BitmapFont font;
 
     // Entidades principais
@@ -74,6 +79,7 @@ public class HagridHouseScreen implements Screen {
         coinIcon       = new Texture(Gdx.files.internal("coin.png"));
         silverKeyIcon  = new Texture(Gdx.files.internal("House_Key.png"));
         goldenKeyIcon  = new Texture(Gdx.files.internal("Castle_Key.png"));
+        locketIcon     = new Texture(Gdx.files.internal("locket.png"));
 
         // 4) Carrega fonte para contadores
         font = new BitmapFont();
@@ -136,7 +142,7 @@ public class HagridHouseScreen implements Screen {
         camera.update();
         batch.setProjectionMatrix(camera.combined);
 
-        // 4) Desenha tudo num único batch
+                // 4) Desenha tudo num único batch
         batch.begin();
 
         // 4.1) Desenha o mapa e todas as entidades (incluindo o player)
@@ -160,29 +166,35 @@ public class HagridHouseScreen implements Screen {
             );
         }
 
-        // 4.3) Desenha o inventário por cima, fixo em canto relativo à câmera
+        // Desenha o inventário por cima, fixo em canto relativo à câmera
         float invX = camera.position.x + camera.viewportWidth/2f - 100;
-        float invY = camera.position.y - camera.viewportHeight/2f + 100;
+        float invY = camera.position.y - camera.viewportHeight/2f + 200;
         int   iconSize = 24;
         float padY     = 4f;
 
-        // 1) Moeda
+        // Moeda
         batch.draw(coinIcon, invX, invY - iconSize, iconSize, iconSize);
         font.draw(batch, "x " + inventory.getItemCount(ItemType.COIN),
             invX + iconSize + padY,
             invY - iconSize/2f + 6);
 
-        // 2) Chave prata
+        // Chave prata
         batch.draw(silverKeyIcon, invX, invY - iconSize*2 - 8, iconSize, iconSize);
         font.draw(batch, "x " + inventory.getItemCount(ItemType.SILVER_KEY),
             invX + iconSize + padY,
             invY - iconSize*1.5f - 8 + 6);
 
-        // 3) Chave dourada
+        // Chave dourada
         batch.draw(goldenKeyIcon, invX, invY - iconSize*3 - 16, iconSize, iconSize);
         font.draw(batch, "x " + inventory.getItemCount(ItemType.GOLDEN_KEY),
             invX + iconSize + padY,
             invY - iconSize*2.5f - 16 + 6);
+
+        // Locket
+        batch.draw(locketIcon, invX, invY - iconSize*4 - 24, iconSize, iconSize);
+        font.draw(batch, "x " + inventory.getItemCount(ItemType.LOCKET),
+            invX + iconSize + padY,
+            invY - iconSize*2.5f - 48 + 6);
 
         batch.end();
     }
@@ -226,6 +238,7 @@ public class HagridHouseScreen implements Screen {
         if (coinIcon != null)      coinIcon.dispose();
         if (silverKeyIcon != null) silverKeyIcon.dispose();
         if (goldenKeyIcon != null) goldenKeyIcon.dispose();
+        if (locketIcon != null)    locketIcon.dispose();
         if (font != null)          font.dispose();
         if (locketManager != null)    locketManager.dispose();
     }

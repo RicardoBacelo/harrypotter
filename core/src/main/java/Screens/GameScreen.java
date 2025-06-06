@@ -15,11 +15,11 @@ import items.SilverKey;
 import observer.ItemType;
 import observer.managers.CoinManager;
 import observer.managers.GoldenKeyManager;
+import observer.managers.LocketManager;
 import observer.managers.SilverKeyManager;
 import ui.Inventory;
 import core.MainGame;
 import World.map.MapLoader;
-import items.Locket;
 import ecs.Entity;
 import ecs.EntityManager;
 import ecs.components.AnimationComponent;
@@ -39,15 +39,15 @@ import java.util.Map;
 
 public class GameScreen implements Screen {
 
-    //Gestão das entidades e sistemas do jogo
-    private final EntityManager entityManager = new EntityManager();
-    private final MovementSystem movementSystem = new MovementSystem();
-    private final RenderSystem renderSystem = new RenderSystem();
-
     //Recursos gráficos e texturas do jogo
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
     private Texture playerTexture, mapTexture;
+
+    //Gestão das entidades e sistemas do jogo
+    private final EntityManager entityManager = new EntityManager();
+    private final MovementSystem movementSystem = new MovementSystem();
+    private final RenderSystem renderSystem = new RenderSystem();
 
     //Jogador e respetivas animações de movimentos
     private Entity player;
@@ -64,9 +64,11 @@ public class GameScreen implements Screen {
     private Texture silverKeyTexture;
     private GoldenKeyManager goldenKeyManager;
     private Texture goldenKeyTexture;
+    private LocketManager locketManager;
+    private Texture locketTexture;
 
     private final Inventory inventory;
-    private Texture coinIcon, silverKeyIcon, goldenKeyIcon;
+    private Texture coinIcon, silverKeyIcon, goldenKeyIcon, locketIcon;
     private BitmapFont font;
     private Texture whitePixel;
 
@@ -172,12 +174,16 @@ public class GameScreen implements Screen {
             Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
             Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+
             // CLICK TO MOVE
             if (Gdx.input.justTouched()) {
+
+                // 1) Converte o clique de tela → mundo:
+                float worldX = camera.position.x - camera.viewportWidth / 2 + Gdx.input.getX();
+                float worldY = camera.position.y + camera.viewportHeight / 2 - Gdx.input.getY();
+
                 try {
-                    // Convert screen to world coords
-                    float worldX = camera.position.x - camera.viewportWidth / 2 + Gdx.input.getX();
-                    float worldY = camera.position.y + camera.viewportHeight / 2 - Gdx.input.getY();
+
 
                     // Convert to tile coordinates
                     int tileX = (int) (worldX / TILE_SIZE);
@@ -246,19 +252,28 @@ public class GameScreen implements Screen {
                 inventoryX+iconSize+paddingY,
                 inventoryY-iconSize/2f+6);
 
-// 2) Chave prata
+            // 2) Chave prata
             batch.draw(silverKeyIcon, inventoryX,inventoryY-iconSize*2-8, iconSize, iconSize);
             font.draw(batch,"x "+inventory.getItemCount(ItemType.SILVER_KEY),
                 inventoryX+iconSize+paddingY,
                 inventoryY-iconSize*1.5f-8+6);
 
-// 3) Chave dourada
+            // 3) Chave dourada
             batch.draw(goldenKeyIcon, inventoryX,inventoryY-iconSize*3-16, iconSize, iconSize);
             font.draw(batch,"x "+inventory.getItemCount(ItemType.GOLDEN_KEY),
                 inventoryX+iconSize+paddingY,
                 inventoryY-iconSize*2.5f-16+6);
 
+            // Locket
+            if (locketIcon != null) {
+                batch.draw(locketIcon, inventoryX, inventoryY - iconSize * 4 - 24, iconSize, iconSize);
+                font.draw(batch, "x " + inventory.getItemCount(ItemType.LOCKET),
+                    inventoryX + iconSize + paddingY,
+                    inventoryY - iconSize * 2.5f - 48 + 6);
+            }
+
             batch.end();
+
         } catch (Exception e) {
             Gdx.app.error("GameScreen", "Error in render", e);
         }

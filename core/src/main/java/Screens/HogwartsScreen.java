@@ -16,7 +16,7 @@ import com.bd2r.game.ecs.components.SpriteComponent;
 import com.bd2r.game.ecs.components.VelocityComponent;
 import com.bd2r.game.ecs.systems.RenderSystem;
 
-public class HagridHouseScreen implements Screen {
+public class HogwartsScreen implements Screen {
 
     private final MainGame game;
     private final Entity player;
@@ -31,7 +31,7 @@ public class HagridHouseScreen implements Screen {
     private int mapWidth, mapHeight;
     private CollisionMap collisionMap;
 
-    public HagridHouseScreen(MainGame game, Entity player, Texture playerTexture) {
+    public HogwartsScreen(MainGame game, Entity player, Texture playerTexture) {
         this.game = game;
         this.player = player;
         this.playerTexture = playerTexture;
@@ -44,9 +44,10 @@ public class HagridHouseScreen implements Screen {
         batch = new SpriteBatch();
 
         // ⚠️ Usa o ficheiro .tmx com a camada de colisões chamada "Collisions"
-        collisionMap = new CollisionMap("collisionscasa.tmx", "Collisions");
+        collisionMap = new CollisionMap("hogwarts.tmx", "Collisions");
 
-        mapTexture = new Texture(Gdx.files.internal("casa.jpg"));
+        // ⚠️ Troca pela imagem que representa o castelo
+        mapTexture = new Texture(Gdx.files.internal("hogwarts.jpg"));
         mapWidth = mapTexture.getWidth();
         mapHeight = mapTexture.getHeight();
 
@@ -61,8 +62,8 @@ public class HagridHouseScreen implements Screen {
 
         PositionComponent pos = player.getComponent(PositionComponent.class);
         if (pos != null) {
-            pos.x = 500;
-            pos.y = 100;
+            pos.x = 500; // ajusta a posição inicial dentro do castelo
+            pos.y = 200;
         }
 
         if (player.getComponent(VelocityComponent.class) == null) {
@@ -91,15 +92,16 @@ public class HagridHouseScreen implements Screen {
 
         PositionComponent pos = player.getComponent(PositionComponent.class);
         VelocityComponent vel = player.getComponent(VelocityComponent.class);
-        //SpriteComponent sprite = player.getComponent(SpriteComponent.class);
 
         if (pos != null && vel != null && sprite != null) {
             float nextX = pos.x + vel.vx * delta;
             float nextY = pos.y + vel.vy * delta;
 
+            // 🧱 Dimensões do sprite ajustadas pela escala
             float spriteWidth = 32 * sprite.scale;
             float spriteHeight = 32 * sprite.scale;
 
+            // 💥 Colisões
             if (!collisionMap.isBlocked(nextX, pos.y, spriteWidth, spriteHeight)) {
                 pos.x = nextX;
             }
@@ -107,11 +109,12 @@ public class HagridHouseScreen implements Screen {
                 pos.y = nextY;
             }
 
+            // Limites do mapa
             pos.x = Math.max(0, Math.min(pos.x, mapWidth - spriteWidth));
             pos.y = Math.max(0, Math.min(pos.y, mapHeight - spriteHeight));
         }
 
-
+        // Atualiza posição da câmara
         if (pos != null) {
             camera.position.set(pos.x + 16, pos.y + 16, 0);
         }

@@ -1,6 +1,7 @@
 package com.bd2r.game.ecs.systems;
 
 import com.bd2r.game.ecs.Entity;
+import com.bd2r.game.ecs.components.AnimationComponent;
 import com.bd2r.game.ecs.components.PositionComponent;
 import com.bd2r.game.ecs.components.VelocityComponent;
 import com.bd2r.game.ecs.components.PathComponent;
@@ -29,6 +30,17 @@ public class MovementSystem {
                 float dx = targetX - pos.x;
                 float dy = targetY - pos.y;
                 float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+                AnimationComponent anim = entity.getComponent(AnimationComponent.class);
+
+                if (anim != null) {
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        anim.setDirection(dx > 0 ? "right" : "left");
+                    } else {
+                        anim.setDirection(dy > 0 ? "up" : "down");
+                    }
+                }
+
 
                 if (distance > 1f) {
                     vel.vx = (dx / distance) * SPEED;

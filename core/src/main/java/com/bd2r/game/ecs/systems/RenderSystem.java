@@ -10,18 +10,18 @@ import java.util.List;
 public class RenderSystem {
     public void render(SpriteBatch batch, List<Entity> entities) {
         for (Entity entity : entities) {
-            PositionComponent pos = entity.getComponent(PositionComponent.class);
+            PositionComponent position = entity.getComponent(PositionComponent.class);
             SpriteComponent sprite = entity.getComponent(SpriteComponent.class);
 
-            if (pos != null && sprite != null && sprite.region != null) {
-                float width = sprite.region.getRegionWidth() * sprite.scale;
-                float height = sprite.region.getRegionHeight() * sprite.scale;
-                batch.draw(sprite.region, pos.x, pos.y, width, height);
+            if (position != null && sprite != null && sprite.region != null) {
+                batch.draw(sprite.region,
+                    position.x,
+                    position.y,
+                    sprite.region.getRegionWidth() * sprite.scale,
+                    sprite.region.getRegionHeight() * sprite.scale);
             }
         }
     }
 }
-
-
 
 

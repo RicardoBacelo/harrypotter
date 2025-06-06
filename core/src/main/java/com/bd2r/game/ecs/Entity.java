@@ -13,13 +13,4 @@ public class Entity {
     public <T> T getComponent(Class<T> componentClass) {
         return componentClass.cast(components.get(componentClass));
     }
-
-    public boolean hasComponent(Class<?> componentClass) {
-        return components.containsKey(componentClass);
-    }
-
-    public void removeComponent(Class<?> componentClass) {
-        components.remove(componentClass);
-    }
 }
-

@@ -18,27 +18,25 @@ import com.bd2r.game.ecs.components.AnimationComponent;
 import com.bd2r.game.ecs.components.PathComponent;
 import com.bd2r.game.ecs.components.PositionComponent;
 import com.bd2r.game.ecs.components.VelocityComponent;
+import com.bd2r.game.ecs.systems.AnimationSystem;
 import com.bd2r.game.ecs.systems.MovementSystem;
 import com.bd2r.game.ecs.systems.RenderSystem;
 import com.bd2r.game.factory.EntityFactory;
 import com.bd2r.game.pathfinder.AStarPathfinder;
 import com.bd2r.game.pathfinder.Node;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class GameScreen implements Screen {
-
     private final EntityManager entityManager = new EntityManager();
     private final MovementSystem movementSystem = new MovementSystem();
+    private final AnimationSystem animationSystem = new AnimationSystem();
     private final RenderSystem renderSystem = new RenderSystem();
 
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
     private Texture playerTexture, mapTexture;
-
     private Entity player;
-    private TextureRegion[] walkUpFrames, walkDownFrames, walkLeftFrames, walkRightFrames;
 
     private OrthographicCamera camera;
     private static final int TILE_SIZE = 32;
@@ -58,11 +56,9 @@ public class GameScreen implements Screen {
     private Texture whitePixel;
     private final MainGame game;
 
-
     public GameScreen(MainGame game) {
-        this.game = game;  // Store the passed game instance
+        this.game = game;
         this.inventory = game.getInventory();
-
     }
 
     @Override
@@ -70,7 +66,6 @@ public class GameScreen implements Screen {
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
 
-        //inventory = new Inventory();
         font = new BitmapFont();
         font.getData().setScale(1.0f);
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -88,18 +83,8 @@ public class GameScreen implements Screen {
 
         playerTexture = new Texture(Gdx.files.internal("hero1.png"));
 
-        walkUpFrames = new TextureRegion[3];
-        walkDownFrames = new TextureRegion[3];
-        walkLeftFrames = new TextureRegion[3];
-        walkRightFrames = new TextureRegion[3];
-
-// Cada linha tem 32 de altura, cada coluna 32 de largura
-        for (int i = 0; i < 3; i++) {
-            walkDownFrames[i] = new TextureRegion(playerTexture, i * 32, 0, 32, 32);  // linha 1
-            walkLeftFrames[i] = new TextureRegion(playerTexture, i * 32, 32, 32, 32);  // linha 2
-            walkRightFrames[i] = new TextureRegion(playerTexture, i * 32, 64, 32, 32);  // linha 3
-            walkUpFrames[i] = new TextureRegion(playerTexture, i * 32, 96, 32, 32);  // linha 4
-        }
+        player = EntityFactory.createPlayer(485, 60, playerTexture);
+        entityManager.addEntity(player);
 
         coinManager = new CoinManager();
         coinTexture = new Texture(Gdx.files.internal("coin.png"));
@@ -113,126 +98,95 @@ public class GameScreen implements Screen {
         goldenKeyManager = new GoldenKeyManager();
         goldenKeyTexture = new Texture(Gdx.files.internal("Castle_Key.png"));
         goldenKeyManager.addGoldenKey(new GoldenKey(750, 150), this);
-
-        player = EntityFactory.createPlayer(485, 60, walkDownFrames[1]);
-        player.addComponent(new AnimationComponent(walkUpFrames, 0.2f));
-        entityManager.addEntity(player);
     }
 
     @Override
     public void render(float delta) {
         try {
+            animationSystem.update(entityManager.getEntities(), delta);
+            handleInput();
+            movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
 
-        handleInput();
-        movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
+            PositionComponent pos = player.getComponent(PositionComponent.class);
+            coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
+            silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+            goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
 
-        player.getComponent(AnimationComponent.class).update(delta);
-        PositionComponent pos = player.getComponent(PositionComponent.class);
+            camera.position.set(pos.x + 16, pos.y + 16, 0);
+            clampCameraPosition();
+            camera.update();
 
-        //Inventory inventory = this.inventory;
-        coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
-        silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-        goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+            Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+            if (Gdx.input.justTouched()) {
+                try {
+                    float worldX = camera.position.x - camera.viewportWidth / 2 + Gdx.input.getX();
+                    float worldY = camera.position.y + camera.viewportHeight / 2 - Gdx.input.getY();
 
-        // Center camera on player
-        camera.position.set(pos.x + 16, pos.y + 16, 0);
-        clampCameraPosition();
-        camera.update();
+                    int tileX = (int) (worldX / TILE_SIZE);
+                    int tileY = (int) (worldY / TILE_SIZE);
 
-        // Clear screen and draw
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+                    int startX = (int) (pos.x / TILE_SIZE);
+                    int startY = (int) (pos.y / TILE_SIZE);
 
-        // CLICK TO MOVE
-        if (Gdx.input.justTouched()) {
-            try {
-                // Convert screen to world coords
-                float worldX = camera.position.x - camera.viewportWidth / 2 + Gdx.input.getX();
-                float worldY = camera.position.y + camera.viewportHeight / 2 - Gdx.input.getY();
+                    AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("mapa.txt"));
+                    List<Node> path = pathfinder.findPath(startX, startY, tileX, tileY);
 
-                // Convert to tile coordinates
-                int tileX = (int) (worldX / TILE_SIZE);
-                int tileY = (int) (worldY / TILE_SIZE);
-
-                int startX = (int) (pos.x / TILE_SIZE);
-                int startY = (int) (pos.y / TILE_SIZE);
-
-                System.out.println("🖱️ Clicked tile: " + tileX + "," + tileY);
-                System.out.println("👣 Player at tile: " + startX + "," + startY);
-
-                AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("mapa.txt")); // path corrected
-                List<Node> path = pathfinder.findPath(startX, startY, tileX, tileY);
-
-                if (path != null && !path.isEmpty()) {
-                    System.out.println("✅ Path found! " + path.size() + " steps.");
-                    // Check if PathComponent already exists
-                    PathComponent pathComp = player.getComponent(PathComponent.class);
-                    if (pathComp == null) {
-                        // If it doesn't exist, create new one
-                        pathComp = new PathComponent();
-                        player.addComponent(pathComp);
+                    if (path != null && !path.isEmpty()) {
+                        PathComponent pathComp = player.getComponent(PathComponent.class);
+                        if (pathComp == null) {
+                            pathComp = new PathComponent();
+                            player.addComponent(pathComp);
+                        }
+                        pathComp.setPath(path);
                     }
-                    // Update the path
-                    pathComp.setPath(path);
 
-                } else {
-                    System.out.println("⚠️ No path found.");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-
-
-
-            } catch (Exception e) {
-                System.err.println("❌ Error on mouse click:");
-                e.printStackTrace();
             }
-        }
-        batch.begin();
 
+            // Desenhar mapa e entidades
+            batch.begin();
             checkTriggers(pos.x, pos.y);
-        // Draw game world elements first
-        batch.draw(mapTexture, 0, 0);
-        renderSystem.render(batch, entityManager.getEntities());
-        coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
-        coinManager.render(batch, coinTexture, delta);
-        silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-        silverKeyManager.render(batch, silverKeyTexture, delta);
-        goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-        goldenKeyManager.render(batch, goldenKeyTexture, delta);
+            batch.draw(mapTexture, 0, 0);
+            renderSystem.render(batch, entityManager.getEntities());
+            coinManager.render(batch, coinTexture, delta);
+            silverKeyManager.render(batch, silverKeyTexture, delta);
+            goldenKeyManager.render(batch, goldenKeyTexture, delta);
+            batch.end();
 
-// End the world space batch and start a new one for UI
-        batch.end();
+            // 🔴 Desenhar ponto vermelho na entrada de Hogwarts
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.RED);
+            shapeRenderer.circle(7 * TILE_SIZE + 16, 34 * TILE_SIZE + 16, 6);
+            shapeRenderer.end();
 
-// Start new batch for UI elements that follow the camera
-        batch.begin();
-// Reset the projection matrix to screen coordinates
-        batch.setProjectionMatrix(camera.combined);
+            // Desenhar inventário
+            batch.begin();
+            batch.setProjectionMatrix(camera.combined);
 
-// Calculate inventory position relative to camera
-        float inventoryX = camera.position.x + (camera.viewportWidth / 2) - 200;
-        float inventoryY = camera.position.y - (camera.viewportHeight / 2) + 100;
+            float inventoryX = camera.position.x + (camera.viewportWidth / 2) - 200;
+            float inventoryY = camera.position.y - (camera.viewportHeight / 2) + 100;
 
-// Draw inventory background
-        batch.setColor(0f, 0f, 0f, 0.5f);
-        batch.draw(whitePixel, inventoryX - 16, inventoryY - 88, 180, 100);
-        batch.setColor(Color.WHITE);
+            batch.setColor(0f, 0f, 0f, 0.5f);
+            batch.draw(whitePixel, inventoryX - 16, inventoryY - 88, 180, 100);
+            batch.setColor(Color.WHITE);
 
+            font.draw(batch, "Inventário", inventoryX, inventoryY);
+            font.draw(batch, inventory.getItemCount(ItemType.COIN) + " x Coins", inventoryX, inventoryY - 24);
+            font.draw(batch, inventory.getItemCount(ItemType.SILVER_KEY) + " x Silver Keys", inventoryX, inventoryY - 48);
+            font.draw(batch, inventory.getItemCount(ItemType.GOLDEN_KEY) + " x Golden Keys", inventoryX, inventoryY - 72);
 
-        // Draw inventory text
-        font.draw(batch, "Inventário", inventoryX, inventoryY);
-        font.draw(batch, inventory.getItemCount(ItemType.COIN) + " x Coins",
-            inventoryX, inventoryY - 24);
-        font.draw(batch, inventory.getItemCount(ItemType.SILVER_KEY) + " x Silver Keys",
-            inventoryX, inventoryY - 48);
-        font.draw(batch, inventory.getItemCount(ItemType.GOLDEN_KEY) + " x Golden Keys",
-            inventoryX, inventoryY - 72);
+            batch.end();
 
-        batch.end();
         } catch (Exception e) {
             Gdx.app.error("GameScreen", "Error in render", e);
         }
-
     }
+
 
     private void handleInput() {
         VelocityComponent vel = player.getComponent(VelocityComponent.class);
@@ -243,19 +197,19 @@ public class GameScreen implements Screen {
 
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
             vel.vx = -100;
-            anim.frames = walkLeftFrames;
+            anim.setDirection("left");
         }
         if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
             vel.vx = 100;
-            anim.frames = walkRightFrames;
+            anim.setDirection("right");
         }
         if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
             vel.vy = 100;
-            anim.frames = walkUpFrames;
+            anim.setDirection("up");
         }
         if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
             vel.vy = -100;
-            anim.frames = walkDownFrames;
+            anim.setDirection("down");
         }
     }
 
@@ -273,29 +227,39 @@ public class GameScreen implements Screen {
     }
 
     private void checkTriggers(float x, float y) {
-        // Convert world coordinates to tile coordinates
         int tileX = (int) (x / TILE_SIZE);
         int tileY = (int) (y / TILE_SIZE);
 
+        // Debug: ver em que tile estás
+        System.out.println("tileX = " + tileX + ", tileY = " + tileY);
+
         PathComponent pathComp = player.getComponent(PathComponent.class);
-        if (pathComp != null && pathComp.path.isEmpty() && tileX == 16 && tileY == 5) {
-            // End the current batch if it's active
-            if (batch.isDrawing()) {
-                batch.end();
+
+        if (pathComp != null && pathComp.path.isEmpty()) {
+
+            // Porta para a casa do Hagrid (ex: tile 16,5)
+            if (tileX == 7 && tileY == 34 && inventory.getItemCount(ItemType.SILVER_KEY) > 0) {
+                if (batch.isDrawing()) batch.end();
+                game.setScreen(new HagridHouseScreen(game, player, playerTexture));
+                dispose();
             }
 
-            // Create new screen
-            Screen newScreen = new HagridHouseScreen(game, player);
+            // Porta para Hogwarts (ex: tile 23,10) — AJUSTA os valores com base no print do terminal
+            if (tileX == 7 && tileY == 41 && inventory.getItemCount(ItemType.GOLDEN_KEY) > 0) {
+                if (batch.isDrawing()) batch.end();
+                game.setScreen(new HogwartsScreen(game, player, playerTexture));
+                dispose();
+            }
 
-            // Set the new screen first
-            game.setScreen(newScreen);
-
-            // Dispose after setting new screen
-            dispose();
-
-
+            // (Opcional) Se quiseres mostrar aviso ao tentar entrar sem chave:
+            if (tileX == 23 && tileY == 10 && inventory.getItemCount(ItemType.GOLDEN_KEY) == 0) {
+                System.out.println("🚪 Porta trancada. Precisas da Golden Key.");
+            }
         }
     }
+
+
+
 
     @Override public void resize(int width, int height) {}
     @Override public void pause() {}
@@ -306,7 +270,7 @@ public class GameScreen implements Screen {
     public void dispose() {
         batch.dispose();
         shapeRenderer.dispose();
-        playerTexture.dispose();
+        //playerTexture.dispose();
         mapTexture.dispose();
         coinManager.dispose();
         silverKeyManager.dispose();

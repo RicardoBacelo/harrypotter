@@ -63,11 +63,12 @@ public class GameScreen implements Screen {
     private Texture whitePixel;
     private final MainGame game;
 
+    // NOVO: variável para pausa
+    private boolean paused = false;
 
     public GameScreen(MainGame game) {
-        this.game = game;  // Store the passed game instance
+        this.game = game;
         this.inventory = game.getInventory();
-
     }
 
     @Override
@@ -75,7 +76,6 @@ public class GameScreen implements Screen {
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
 
-        //inventory = new Inventory();
         font = new BitmapFont();
         font.getData().setScale(1.0f);
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -98,12 +98,11 @@ public class GameScreen implements Screen {
         walkLeftFrames = new TextureRegion[3];
         walkRightFrames = new TextureRegion[3];
 
-// Cada linha tem 32 de altura, cada coluna 32 de largura
         for (int i = 0; i < 3; i++) {
-            walkDownFrames[i] = new TextureRegion(playerTexture, i * 32, 0, 32, 32);  // linha 1
-            walkLeftFrames[i] = new TextureRegion(playerTexture, i * 32, 32, 32, 32);  // linha 2
-            walkRightFrames[i] = new TextureRegion(playerTexture, i * 32, 64, 32, 32);  // linha 3
-            walkUpFrames[i] = new TextureRegion(playerTexture, i * 32, 96, 32, 32);  // linha 4
+            walkDownFrames[i] = new TextureRegion(playerTexture, i * 32, 0, 32, 32);
+            walkLeftFrames[i] = new TextureRegion(playerTexture, i * 32, 32, 32, 32);
+            walkRightFrames[i] = new TextureRegion(playerTexture, i * 32, 64, 32, 32);
+            walkUpFrames[i] = new TextureRegion(playerTexture, i * 32, 96, 32, 32);
         }
 
         coinManager = new CoinManager();
@@ -127,116 +126,112 @@ public class GameScreen implements Screen {
     @Override
     public void render(float delta) {
         try {
-
-        handleInput();
-        movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
-
-        player.getComponent(AnimationComponent.class).update(delta);
-        PositionComponent pos = player.getComponent(PositionComponent.class);
-
-        //Inventory inventory = this.inventory;
-        coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
-        silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-        goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-
-
-        // Center camera on player
-        camera.position.set(pos.x + 16, pos.y + 16, 0);
-        clampCameraPosition();
-        camera.update();
-
-        // Clear screen and draw
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-        // CLICK TO MOVE
-        if (Gdx.input.justTouched()) {
-            try {
-                // Convert screen to world coords
-                float worldX = camera.position.x - camera.viewportWidth / 2 + Gdx.input.getX();
-                float worldY = camera.position.y + camera.viewportHeight / 2 - Gdx.input.getY();
-
-                // Convert to tile coordinates
-                int tileX = (int) (worldX / TILE_SIZE);
-                int tileY = (int) (worldY / TILE_SIZE);
-
-                int startX = (int) (pos.x / TILE_SIZE);
-                int startY = (int) (pos.y / TILE_SIZE);
-
-                System.out.println("🖱️ Clicked tile: " + tileX + "," + tileY);
-                System.out.println("👣 Player at tile: " + startX + "," + startY);
-
-                AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("mapa.txt")); // path corrected
-                List<Node> path = pathfinder.findPath(startX, startY, tileX, tileY);
-
-                if (path != null && !path.isEmpty()) {
-                    System.out.println("✅ Path found! " + path.size() + " steps.");
-                    // Check if PathComponent already exists
-                    PathComponent pathComp = player.getComponent(PathComponent.class);
-                    if (pathComp == null) {
-                        // If it doesn't exist, create new one
-                        pathComp = new PathComponent();
-                        player.addComponent(pathComp);
-                    }
-                    // Update the path
-                    pathComp.setPath(path);
-
-                } else {
-                    System.out.println("⚠️ No path found.");
-                }
-
-
-
-            } catch (Exception e) {
-                System.err.println("❌ Error on mouse click:");
-                e.printStackTrace();
+            // NOVO: alternar pausa com tecla P
+            if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
+                paused = !paused;
             }
-        }
-        batch.begin();
+
+            PositionComponent pos = player.getComponent(PositionComponent.class);
+
+            if (!paused) {
+                handleInput();
+                movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
+                player.getComponent(AnimationComponent.class).update(delta);
+
+                coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
+                silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+                goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+
+                camera.position.set(pos.x + 16, pos.y + 16, 0);
+                clampCameraPosition();
+                camera.update();
+            }
+
+            Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+            if (Gdx.input.justTouched()) {
+                try {
+                    float worldX = camera.position.x - camera.viewportWidth / 2 + Gdx.input.getX();
+                    float worldY = camera.position.y + camera.viewportHeight / 2 - Gdx.input.getY();
+
+                    int tileX = (int) (worldX / TILE_SIZE);
+                    int tileY = (int) (worldY / TILE_SIZE);
+
+                    int startX = (int) (pos.x / TILE_SIZE);
+                    int startY = (int) (pos.y / TILE_SIZE);
+
+                    System.out.println("🖱️ Clicked tile: " + tileX + "," + tileY);
+                    System.out.println("👣 Player at tile: " + startX + "," + startY);
+
+                    AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("mapa.txt"));
+                    List<Node> path = pathfinder.findPath(startX, startY, tileX, tileY);
+
+                    if (path != null && !path.isEmpty()) {
+                        System.out.println("✅ Path found! " + path.size() + " steps.");
+                        PathComponent pathComp = player.getComponent(PathComponent.class);
+                        if (pathComp == null) {
+                            pathComp = new PathComponent();
+                            player.addComponent(pathComp);
+                        }
+                        pathComp.setPath(path);
+                    } else {
+                        System.out.println("⚠️ No path found.");
+                    }
+
+                } catch (Exception e) {
+                    System.err.println("❌ Error on mouse click:");
+                    e.printStackTrace();
+                }
+            }
+
+            batch.begin();
 
             checkTriggers(pos.x, pos.y);
-        // Draw game world elements first
-        batch.draw(mapTexture, 0, 0);
-        renderSystem.render(batch, entityManager.getEntities());
-        coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
-        coinManager.render(batch, coinTexture, delta);
-        silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-        silverKeyManager.render(batch, silverKeyTexture, delta);
-        goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
-        goldenKeyManager.render(batch, goldenKeyTexture, delta);
 
-// End the world space batch and start a new one for UI
-        batch.end();
+            batch.draw(mapTexture, 0, 0);
+            renderSystem.render(batch, entityManager.getEntities());
 
-// Start new batch for UI elements that follow the camera
-        batch.begin();
-// Reset the projection matrix to screen coordinates
-        batch.setProjectionMatrix(camera.combined);
+            coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
+            coinManager.render(batch, coinTexture, delta);
 
-// Calculate inventory position relative to camera
-        float inventoryX = camera.position.x + (camera.viewportWidth / 2) - 200;
-        float inventoryY = camera.position.y - (camera.viewportHeight / 2) + 100;
+            silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+            silverKeyManager.render(batch, silverKeyTexture, delta);
 
-// Draw inventory background
-        batch.setColor(0f, 0f, 0f, 0.5f);
-        batch.draw(whitePixel, inventoryX - 16, inventoryY - 88, 180, 100);
-        batch.setColor(Color.WHITE);
+            goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+            goldenKeyManager.render(batch, goldenKeyTexture, delta);
 
+            batch.end();
 
-        // Draw inventory text
-        font.draw(batch, "Inventário", inventoryX, inventoryY);
-        font.draw(batch, inventory.getItemCount(ItemType.COIN) + " x Coins",
-            inventoryX, inventoryY - 24);
-        font.draw(batch, inventory.getItemCount(ItemType.SILVER_KEY) + " x Silver Keys",
-            inventoryX, inventoryY - 48);
-        font.draw(batch, inventory.getItemCount(ItemType.GOLDEN_KEY) + " x Golden Keys",
-            inventoryX, inventoryY - 72);
+            batch.begin();
+            batch.setProjectionMatrix(camera.combined);
 
-        batch.end();
+            float inventoryX = camera.position.x + (camera.viewportWidth / 2) - 200;
+            float inventoryY = camera.position.y - (camera.viewportHeight / 2) + 100;
+
+            batch.setColor(0f, 0f, 0f, 0.5f);
+            batch.draw(whitePixel, inventoryX - 16, inventoryY - 88, 180, 100);
+            batch.setColor(Color.WHITE);
+
+            font.draw(batch, "Inventário", inventoryX, inventoryY);
+            font.draw(batch, inventory.getItemCount(ItemType.COIN) + " x Coins", inventoryX, inventoryY - 24);
+            font.draw(batch, inventory.getItemCount(ItemType.SILVER_KEY) + " x Silver Keys", inventoryX, inventoryY - 48);
+            font.draw(batch, inventory.getItemCount(ItemType.GOLDEN_KEY) + " x Golden Keys", inventoryX, inventoryY - 72);
+
+            // NOVO: Mostrar mensagem de pausa
+            if (paused) {
+                font.getData().setScale(2.5f);
+                font.setColor(Color.RED);
+                font.draw(batch, "Jogo Pausado", camera.position.x - 100, camera.position.y);
+                font.getData().setScale(1.0f);
+                font.setColor(Color.WHITE);
+            }
+
+            batch.end();
+
         } catch (Exception e) {
             Gdx.app.error("GameScreen", "Error in render", e);
         }
-
     }
 
     private void handleInput() {
@@ -278,27 +273,17 @@ public class GameScreen implements Screen {
     }
 
     private void checkTriggers(float x, float y) {
-        // Convert world coordinates to tile coordinates
         int tileX = (int) (x / TILE_SIZE);
         int tileY = (int) (y / TILE_SIZE);
 
         PathComponent pathComp = player.getComponent(PathComponent.class);
         if (pathComp != null && pathComp.path.isEmpty() && tileX == 16 && tileY == 5) {
-            // End the current batch if it's active
             if (batch.isDrawing()) {
                 batch.end();
             }
-
-            // Create new screen
             Screen newScreen = new HagridHouseScreen(game);
-
-            // Set the new screen first
             game.setScreen(newScreen);
-
-            // Dispose after setting new screen
             dispose();
-
-
         }
     }
 

@@ -17,7 +17,12 @@ public class EntityFactory {
         player.addComponent(new SpriteComponent(sprite));
         return player;
     }
+    //public static Entity createNPC(float x, float y, TextureRegion sprite) {
+        //Entity npc = new Entity();
+        //npc.addComponent(new PositionComponent(x, y));
+        //npc.addComponent(new VelocityComponent
 
+    
     // No futuro podes adicionar:
     // public static Entity createEnemy(...) { ... }
     // public static Entity createCoin(...) { ... }

@@ -299,23 +299,28 @@ public class HogwartsScreen implements Screen {
         int tileX = (int) (x / TILE_SIZE);
         int tileY = (int) (y / TILE_SIZE);
 
-        System.out.println("tileX = " + tileX + ", tileY = " + tileY); // para debug
+        System.out.println("tileX = " + tileX + ", tileY = " + tileY); // debug
 
         PathComponent pathComp = player.getComponent(PathComponent.class);
 
         if (pathComp != null && pathComp.path.isEmpty()) {
-            Inventory inventory = game.getInventory();
-
-            // 🔐 SAIR de Hogwarts com a varinha
-            if (tileX == 4 && tileY == 3 && inventory.getItemCount(ItemType.WAND) > 0) {
+            // Verifica se o jogador está na porta com o medalhão
+            if (tileX == 4 && tileY == 3 && game.getInventory().getItemCount(ItemType.WAND) > 0) {
                 if (batch.isDrawing()) batch.end();
 
                 Gdx.app.postRunnable(() -> {
                     PositionComponent pos = player.getComponent(PositionComponent.class);
+                    SpriteComponent sprite = player.getComponent(SpriteComponent.class);
+
                     if (pos != null) {
-                        pos.x = 7 * TILE_SIZE;  // 224
-                        pos.y = 41 * TILE_SIZE; // 1312
+                        pos.x = 7 * TILE_SIZE;
+                        pos.y = 41 * TILE_SIZE - 32; // mesma posição de entrada usada para Hogwarts
                     }
+
+                    if (sprite != null) {
+                        sprite.scale = 2f;
+                    }
+
                     game.setScreen(new GameScreen(game, player, playerTexture));
                     dispose();
                 });

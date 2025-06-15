@@ -7,6 +7,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector3;
 import com.bd2r.game.CollisionMap;
 import com.bd2r.game.Inventory;
@@ -45,6 +46,8 @@ public class HagridHouseScreen implements Screen {
 
     private final Inventory inventory;
     private Texture whitePixel;
+    private static final int TILE_SIZE = 32;
+
 
 
     // Ícones do inventário
@@ -154,7 +157,9 @@ public class HagridHouseScreen implements Screen {
         // ✅ ATUALIZA os lockets (recolha do medalhão)
         if (pos != null && vel != null) {
             locketManager.updateAndNotifyLockets(pos.x, pos.y, inventory);
+            checkTriggers(pos.x, pos.y); // <-- aqui está perfeito
         }
+
 
         if (pos != null && vel != null && sprite != null) {
             PathComponent path = player.getComponent(PathComponent.class);
@@ -243,9 +248,6 @@ public class HagridHouseScreen implements Screen {
         batch.setColor(Color.WHITE);
 
 
-// Aceder ao inventário através do game
-        Inventory inventory = game.getInventory();
-
 
         // Fundo do inventário
         batch.setColor(0f, 0f, 0f, 0.5f);
@@ -288,6 +290,15 @@ public class HagridHouseScreen implements Screen {
             inventoryY - iconSize * 4.5f - 32 + 6);
 
         batch.end();
+        // 🔴 Desenhar ponto vermelho na saída da casa do Hagrid
+        ShapeRenderer shapeRenderer = new ShapeRenderer();
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(Color.RED);
+        shapeRenderer.circle(7 * TILE_SIZE + 16, 34 * TILE_SIZE + 16, 6); // centro do tile
+        shapeRenderer.end();
+        shapeRenderer.dispose(); // limpa o recurso após uso
+
     }
 
 
@@ -379,6 +390,42 @@ public class HagridHouseScreen implements Screen {
         camera.position.x = Math.max(minX, Math.min(camera.position.x, maxX));
         camera.position.y = Math.max(minY, Math.min(camera.position.y, maxY));
     }
+
+    private void checkTriggers(float x, float y) {
+        int tileX = (int) (x / TILE_SIZE);
+        int tileY = (int) (y / TILE_SIZE);
+
+        System.out.println("tileX = " + tileX + ", tileY = " + tileY); // debug
+
+        PathComponent pathComp = player.getComponent(PathComponent.class);
+
+        if (pathComp != null && pathComp.path.isEmpty()) {
+            if (tileX == 6 && tileY == 33 && inventory.getItemCount(ItemType.LOCKET) > 0) {
+                if (batch.isDrawing()) batch.end();
+
+                Gdx.app.postRunnable(() -> {
+                    PositionComponent pos = player.getComponent(PositionComponent.class);
+                    SpriteComponent sprite = player.getComponent(SpriteComponent.class);
+
+                    if (pos != null) {
+                        pos.x = 7 * TILE_SIZE;   // Volta para fora da casa, junto à entrada
+                        pos.y = 34 * TILE_SIZE;
+                    }
+
+                    if (sprite != null) {
+                        sprite.scale = 2f; // Volta ao tamanho do mundo exterior
+                    }
+
+                    game.setScreen(new GameScreen(game, player, playerTexture));
+                    dispose();
+                });
+            }
+        }
+    }
+
+
+
+
 
     @Override public void resize(int width, int height) {
         camera.viewportWidth = width;

@@ -14,10 +14,7 @@ import com.bd2r.game.MapLoader;
 import com.bd2r.game.Observer.*;
 import com.bd2r.game.ecs.Entity;
 import com.bd2r.game.ecs.EntityManager;
-import com.bd2r.game.ecs.components.AnimationComponent;
-import com.bd2r.game.ecs.components.PathComponent;
-import com.bd2r.game.ecs.components.PositionComponent;
-import com.bd2r.game.ecs.components.VelocityComponent;
+import com.bd2r.game.ecs.components.*;
 import com.bd2r.game.ecs.systems.AnimationSystem;
 import com.bd2r.game.ecs.systems.MovementSystem;
 import com.bd2r.game.ecs.systems.RenderSystem;
@@ -105,6 +102,12 @@ public class GameScreen implements Screen {
             player = EntityFactory.createPlayer(485, 60, playerTexture);
         }
         entityManager.addEntity(player);
+
+        SpriteComponent sprite = player.getComponent(SpriteComponent.class);
+        if (sprite != null) {
+            sprite.scale = 1f; // Ou o valor que usavas antes
+        }
+
 
 
         coinManager = new CoinManager();

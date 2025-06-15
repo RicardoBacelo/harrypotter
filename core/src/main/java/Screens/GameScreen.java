@@ -1,5 +1,5 @@
 package Screens;
-
+import com.badlogic.gdx.utils.TimeUtils;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
@@ -29,6 +29,8 @@ import observer.managers.SilverKeyManager;
 import items.Coin;
 import items.GoldenKey;
 import items.SilverKey;
+
+
 
 import java.util.List;
 
@@ -63,8 +65,13 @@ public class GameScreen implements Screen {
     private Texture whitePixel;
     private final MainGame game;
 
-    // NOVO: variável para pausa
+
     private boolean paused = false;
+
+    //  Coruja
+    private Texture owlTexture;
+    private Entity owl;
+    private long lastDirectionChangeTime;
 
     public GameScreen(MainGame game) {
         this.game = game;
@@ -121,12 +128,19 @@ public class GameScreen implements Screen {
         player = EntityFactory.createPlayer(485, 60, walkDownFrames[1]);
         player.addComponent(new AnimationComponent(walkUpFrames, 0.2f));
         entityManager.addEntity(player);
+
+        //curuja
+        owlTexture = new Texture(Gdx.files.internal("owl.png"));
+        TextureRegion owlRegion = new TextureRegion(owlTexture);
+        owl = EntityFactory.createOwl(300, 300, owlRegion);
+        entityManager.addEntity(owl);
+        lastDirectionChangeTime = TimeUtils.millis();
     }
 
     @Override
     public void render(float delta) {
         try {
-            // NOVO: alternar pausa com tecla P
+
             if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
                 paused = !paused;
             }
@@ -141,6 +155,20 @@ public class GameScreen implements Screen {
                 coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
                 silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
                 goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
+
+            //crouja
+                VelocityComponent owlVel = owl.getComponent(VelocityComponent.class);
+                PositionComponent owlPos = owl.getComponent(PositionComponent.class);
+
+                if (TimeUtils.timeSinceMillis(lastDirectionChangeTime) > 1000) {
+                    float[] speeds = {-50, 0, 50};
+                    owlVel.vx = speeds[(int)(Math.random() * speeds.length)];
+                    owlVel.vy = speeds[(int)(Math.random() * speeds.length)];
+                    lastDirectionChangeTime = TimeUtils.millis();
+                }
+
+                if (owlPos.x < 0 || owlPos.x > mapWidth - TILE_SIZE) owlVel.vx *= -1;
+                if (owlPos.y < 0 || owlPos.y > mapHeight - TILE_SIZE) owlVel.vy *= -1;
 
                 camera.position.set(pos.x + 16, pos.y + 16, 0);
                 clampCameraPosition();
@@ -161,22 +189,16 @@ public class GameScreen implements Screen {
                     int startX = (int) (pos.x / TILE_SIZE);
                     int startY = (int) (pos.y / TILE_SIZE);
 
-                    System.out.println("🖱️ Clicked tile: " + tileX + "," + tileY);
-                    System.out.println("👣 Player at tile: " + startX + "," + startY);
-
                     AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("mapa.txt"));
                     List<Node> path = pathfinder.findPath(startX, startY, tileX, tileY);
 
                     if (path != null && !path.isEmpty()) {
-                        System.out.println("✅ Path found! " + path.size() + " steps.");
                         PathComponent pathComp = player.getComponent(PathComponent.class);
                         if (pathComp == null) {
                             pathComp = new PathComponent();
                             player.addComponent(pathComp);
                         }
                         pathComp.setPath(path);
-                    } else {
-                        System.out.println("⚠️ No path found.");
                     }
 
                 } catch (Exception e) {
@@ -218,7 +240,6 @@ public class GameScreen implements Screen {
             font.draw(batch, inventory.getItemCount(ItemType.SILVER_KEY) + " x Silver Keys", inventoryX, inventoryY - 48);
             font.draw(batch, inventory.getItemCount(ItemType.GOLDEN_KEY) + " x Golden Keys", inventoryX, inventoryY - 72);
 
-            // NOVO: Mostrar mensagem de pausa
             if (paused) {
                 font.getData().setScale(2.5f);
                 font.setColor(Color.RED);
@@ -303,5 +324,6 @@ public class GameScreen implements Screen {
         goldenKeyManager.dispose();
         whitePixel.dispose();
         font.dispose();
+        owlTexture.dispose();
     }
 }

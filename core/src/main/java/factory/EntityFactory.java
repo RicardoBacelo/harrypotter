@@ -1,11 +1,9 @@
 package factory;
 
-
-
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import ecs.components.SpriteComponent;
 import ecs.Entity;
 import ecs.components.PositionComponent;
+import ecs.components.SpriteComponent;
 import ecs.components.VelocityComponent;
 
 public class EntityFactory {
@@ -17,14 +15,16 @@ public class EntityFactory {
         player.addComponent(new SpriteComponent(sprite));
         return player;
     }
-    //public static Entity createNPC(float x, float y, TextureRegion sprite) {
-        //Entity npc = new Entity();
-        //npc.addComponent(new PositionComponent(x, y));
-        //npc.addComponent(new VelocityComponent
 
-    
+    public static Entity createOwl(float x, float y, TextureRegion sprite) {
+        Entity owl = new Entity();
+        owl.addComponent(new PositionComponent(x, y));
+        owl.addComponent(new VelocityComponent(0, 0)); // para movimento aleatório
+        owl.addComponent(new SpriteComponent(sprite));
+        return owl;
+    }
+
     // No futuro podes adicionar:
     // public static Entity createEnemy(...) { ... }
     // public static Entity createCoin(...) { ... }
 }
-

@@ -33,7 +33,7 @@ public class EntityFactory {
         player.addComponent(new PositionComponent(x, y));
         player.addComponent(new VelocityComponent(0f, 0f, 100f));
         player.addComponent(anim);
-        player.addComponent(new SpriteComponent(walkDownFrames[0], 1f)); // frame inicial + escala
+        player.addComponent(new SpriteComponent(anim.getCurrentFrame(), 1f)); // frame inicial + escala
 
         return player;
     }

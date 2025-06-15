@@ -1,48 +1,31 @@
 package com.bd2r.game;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.maps.MapLayer;
-import com.badlogic.gdx.maps.MapObject;
-import com.badlogic.gdx.maps.objects.RectangleMapObject;
-import com.badlogic.gdx.maps.tiled.TmxMapLoader;
-import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.math.Rectangle;
-
-import java.util.ArrayList;
-import java.util.List;
-
 public class CollisionMap {
-    private final List<Rectangle> collisionRects = new ArrayList<>();
+    private final int[][] map;
+    private static final int TILE_SIZE = 32;
 
-    public CollisionMap(String tmxFilePath, String objectLayerName) {
-        TiledMap map = new TmxMapLoader().load(tmxFilePath);
-        MapLayer layer = map.getLayers().get(objectLayerName);
-
-        if (layer == null) {
-            Gdx.app.error("CollisionMap", "Layer not found: " + objectLayerName);
-            return;
-        }
-
-        for (MapObject object : layer.getObjects()) {
-            if (object instanceof RectangleMapObject) {
-                RectangleMapObject rectObject = (RectangleMapObject) object;
-                collisionRects.add(rectObject.getRectangle());
-            }
-        }
+    public CollisionMap(String path) {
+        this.map = MapLoader.loadMap(path);
     }
 
     public boolean isBlocked(float x, float y, float width, float height) {
-        Rectangle playerRect = new Rectangle(x, y, width, height);
-        for (Rectangle rect : collisionRects) {
-            if (rect.overlaps(playerRect)) {
-                return true;
+        int tileStartX = (int) (x / TILE_SIZE);
+        int tileEndX = (int) ((x + width - 1) / TILE_SIZE);
+        int tileStartY = (int) (y / TILE_SIZE);
+        int tileEndY = (int) ((y + height - 1) / TILE_SIZE);
+
+        for (int ty = tileStartY; ty <= tileEndY; ty++) {
+            for (int tx = tileStartX; tx <= tileEndX; tx++) {
+                if (isOutOfBounds(tx, ty) || map[ty][tx] == 0) {
+                    return true; // bloqueado ou fora do mapa
+                }
             }
         }
-        return false;
+
+        return false; // livre
     }
 
-
-    public List<Rectangle> getCollisionRects() {
-        return collisionRects;
+    private boolean isOutOfBounds(int x, int y) {
+        return y < 0 || y >= map.length || x < 0 || x >= map[0].length;
     }
 }

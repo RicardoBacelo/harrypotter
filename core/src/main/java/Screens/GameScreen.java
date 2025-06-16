@@ -173,7 +173,7 @@ public class GameScreen implements Screen {
         owls = new ArrayList<>();
 
 
-        for (int i = 0; i < 5; i++) { // número de corujas que quiseres
+        for (int i = 0; i < 15; i++) { // número de corujas que quiseres
             float x = (float)(Math.random() * mapWidth);
             float y = (float)(Math.random() * mapHeight);
             Entity owl = EntityFactory.createOwl(x, y, owlTexture);

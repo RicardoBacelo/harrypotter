@@ -25,6 +25,7 @@ import com.bd2r.game.pathfinder.Node;
 import com.bd2r.game.Inventory;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class HogwartsScreen implements Screen {
@@ -64,6 +65,9 @@ public class HogwartsScreen implements Screen {
     private boolean ghostMessageVisible = false;
     private float ghostMessageTimer = 0f;
     private final float GHOST_MESSAGE_DURATION = 3f;
+
+    private final List<Entity> ghosts = new ArrayList<>();
+
 
 
     private static final int TILE_SIZE = 32;
@@ -138,25 +142,16 @@ public class HogwartsScreen implements Screen {
         }
 
         entityManager.addEntity(player);
-        // --- Inicializar Fantasma ---
+        // --- Inicializar Vários Fantasmas ---
         ghostTexture = new Texture(Gdx.files.internal("ghost.png"));
-        TextureRegion[][] ghostTmp = TextureRegion.split(ghostTexture, 32, 32); // 3x3 frames esperados
-        ghostFrames = new TextureRegion[9];
-        int index = 0;
-        for (int i = 0; i < 1; i++) {
-            for (int j = 0; j < 1; j++) {
-                ghostFrames[index++] = ghostTmp[i][j];
-            }
-        }
-        ghostAnim = new AnimationComponent(0.1f);
-        ghostAnim.addAnimation("float", ghostFrames);
-        ghostAnim.setDirection("float");
+        TextureRegion[][] ghostTmp = TextureRegion.split(ghostTexture, 32, 32);
+        TextureRegion[] ghostFrames = new TextureRegion[1];
+        ghostFrames[0] = ghostTmp[0][0]; // só uma frame por agora
 
-        ghost = new Entity();
-        ghost.addComponent(new PositionComponent(400, 300));
-        ghost.addComponent(new SpriteComponent(ghostFrames[0], 1.5f)); // escala maior para destacar
-        ghost.addComponent(new VelocityComponent(0f, 0f, 50f)); // velocidade fantasma
-        entityManager.addEntity(ghost);
+        addGhost(400, 300, ghostFrames);
+        addGhost(700, 400, ghostFrames);
+        addGhost(250, 600, ghostFrames);
+
 
     }
 
@@ -167,34 +162,37 @@ public class HogwartsScreen implements Screen {
         movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
         animationSystem.update(entityManager.getEntities(), delta);
 
-        ghostAnim.update(delta);
-        // Movimento aleatório simples do fantasma
-        // Movimento aleatório simples do fantasma
-        // Movimento simples aleatório do fantasma (sem colisões, NPC básico)
-        if (MathUtils.randomBoolean(0.01f)) { // 1% chance por frame de mudar de direção
-            VelocityComponent ghostVel = ghost.getComponent(VelocityComponent.class);
-            if (ghostVel != null) {
-                float speed = 30f;
-                int dir = MathUtils.random(3);
-                ghostVel.vx = 0;
-                ghostVel.vy = 0;
-                switch (dir) {
-                    case 0:
-                        ghostVel.vx = speed;
-                        break;   // direita
-                    case 1:
-                        ghostVel.vx = -speed;
-                        break;  // esquerda
-                    case 2:
-                        ghostVel.vy = speed;
-                        break;   // cima
-                    case 3:
-                        ghostVel.vy = -speed;
-                        break;  // baixo
-                }
+        for (Entity ghost : ghosts) {
+            // Movimento aleatório simples
+            if (MathUtils.randomBoolean(0.01f)) {
+                VelocityComponent vel = ghost.getComponent(VelocityComponent.class);
+                if (vel != null) {
+                    float speed = 30f;
+                    vel.vx = 0;
+                    vel.vy = 0;
+                    switch (MathUtils.random(3)) {
+                        case 0:
+                            vel.vx = speed;
+                            break;
+                        case 1:
+                            vel.vx = -speed;
+                            break;
+                        case 2:
+                            vel.vy = speed;
+                            break;
+                        case 3:
+                            vel.vy = -speed;
+                            break;
+                    }
 
+                }
             }
+
+            // Atualizar animação
+            AnimationComponent anim = ghost.getComponent(AnimationComponent.class);
+            if (anim != null) anim.update(delta);
         }
+
 
 
         PositionComponent pos = player.getComponent(PositionComponent.class);
@@ -412,4 +410,19 @@ public class HogwartsScreen implements Screen {
         if (batch != null) batch.dispose();
         if (mapTexture != null) mapTexture.dispose();
     }
+    private void addGhost(float x, float y, TextureRegion[] frames) {
+        Entity ghost = new Entity();
+        ghost.addComponent(new PositionComponent(x, y));
+        ghost.addComponent(new SpriteComponent(frames[0], 1.5f));
+        ghost.addComponent(new VelocityComponent(0f, 0f, 50f));
+
+        AnimationComponent anim = new AnimationComponent(0.1f);
+        anim.addAnimation("float", frames);
+        anim.setDirection("float");
+        ghost.addComponent(anim);
+
+        ghosts.add(ghost);
+        entityManager.addEntity(ghost);
+    }
+
 }

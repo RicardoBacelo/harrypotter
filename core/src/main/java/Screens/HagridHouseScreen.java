@@ -1,27 +1,18 @@
 package Screens;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputAdapter;
-import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector3;
-import com.bd2r.game.CollisionMap;
-import com.bd2r.game.Inventory;
-import com.bd2r.game.MainGame;
-import com.bd2r.game.Observer.ItemType;
-import com.bd2r.game.MapLoader;
-import com.bd2r.game.Observer.Locket;
-import com.bd2r.game.Observer.LocketManager;
+import com.bd2r.game.*;
+import com.bd2r.game.Observer.*;
 import com.bd2r.game.ecs.Entity;
 import com.bd2r.game.ecs.EntityManager;
 import com.bd2r.game.ecs.components.*;
 import com.bd2r.game.ecs.systems.RenderSystem;
-import com.bd2r.game.pathfinder.AStarPathfinder;
-import com.bd2r.game.pathfinder.Node;
+import com.bd2r.game.pathfinder.*;
 
 import java.util.List;
 
@@ -30,9 +21,10 @@ public class HagridHouseScreen implements Screen {
     private final MainGame game;
     private final Entity player;
     private final Texture playerTexture;
+    private final Inventory inventory;
 
-    private final EntityManager entityManager;
-    private final RenderSystem renderSystem;
+    private final EntityManager entityManager = new EntityManager();
+    private final RenderSystem renderSystem = new RenderSystem();
 
     private SpriteBatch batch;
     private OrthographicCamera camera;
@@ -40,138 +32,166 @@ public class HagridHouseScreen implements Screen {
     private int mapWidth, mapHeight;
     private CollisionMap collisionMap;
 
-    private LocketManager locketManager;
-    private Texture locketTexture;
-    private Locket locket;
-
-    private final Inventory inventory;
     private Texture whitePixel;
-    private static final int TILE_SIZE = 32;
-
-
-
-    // Ícones do inventário
-    private Texture coinIcon;
-    private Texture silverKeyIcon;
-    private Texture goldenKeyIcon;
-    private Texture locketIcon;
-    private Texture wandIcon;
     private BitmapFont font;
 
+    private LocketManager locketManager;
+    private Texture locketTexture;
 
+    private static final int TILE_SIZE = 32;
 
+    // Ícones
+    private Texture coinIcon, silverKeyIcon, goldenKeyIcon, locketIcon, wandIcon;
 
     public HagridHouseScreen(MainGame game, Entity player, Texture playerTexture, Inventory inventory) {
         this.game = game;
         this.player = player;
         this.playerTexture = playerTexture;
         this.inventory = inventory;
-        this.entityManager = new EntityManager();
-        this.renderSystem = new RenderSystem();
     }
-
 
     @Override
     public void show() {
         batch = new SpriteBatch();
-        setupInput();
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(Color.WHITE);
-        pixmap.fill();
-        whitePixel = new Texture(pixmap);
-        pixmap.dispose();
 
-
-        // 🔸 Inicializar fonte para o inventário
+        // Texturas e UI
         font = new BitmapFont();
         font.getData().setScale(1f);
+        whitePixel = createWhitePixel();
 
-        // 🔸 Carregar os ícones do inventário
         coinIcon = new Texture(Gdx.files.internal("coin.png"));
         silverKeyIcon = new Texture(Gdx.files.internal("House_Key.png"));
         goldenKeyIcon = new Texture(Gdx.files.internal("Castle_Key.png"));
         locketIcon = new Texture(Gdx.files.internal("locket.png"));
         wandIcon = new Texture(Gdx.files.internal("Wand.png"));
 
-        // 🔸 Carregar mapa visual e colisões
         mapTexture = new Texture(Gdx.files.internal("casa.jpg"));
         mapWidth = mapTexture.getWidth();
         mapHeight = mapTexture.getHeight();
         collisionMap = new CollisionMap("casahagrid.txt");
 
-        // 🔸 Inicializar câmara
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
-        // 🔸 Preparar sprite do jogador
-        SpriteComponent sprite = player.getComponent(SpriteComponent.class);
-        if (sprite != null) {
-            sprite.scale = 2f;
-        }
+        setupPlayer();
+        setupInput();
 
-        // 🔸 Posição inicial do jogador
+        // Locket
+        locketManager = new LocketManager();
+        locketTexture = new Texture(Gdx.files.internal("locket.png"));
+        locketManager.addLocket(new Locket(680, 710), this);
+
+        entityManager.addEntity(player);
+    }
+
+    private Texture createWhitePixel() {
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+        Texture tex = new Texture(pixmap);
+        pixmap.dispose();
+        return tex;
+    }
+
+    private void setupPlayer() {
         PositionComponent pos = player.getComponent(PositionComponent.class);
         if (pos != null) {
             pos.x = 500;
             pos.y = 100;
         }
 
-        // 🔸 Velocidade
-        if (player.getComponent(VelocityComponent.class) == null) {
-            player.addComponent(new VelocityComponent(0, 0, 100));
+        SpriteComponent sprite = player.getComponent(SpriteComponent.class);
+        if (sprite != null) {
+            sprite.scale = 2f;
         }
 
-        // 🔸 Animação inicial
+        VelocityComponent vel = player.getComponent(VelocityComponent.class);
+        if (vel == null) {
+            player.addComponent(new VelocityComponent(0, 0, 150f)); // nova velocidade
+        } else {
+            vel.speed = 150f; // força nova velocidade mesmo que já exista
+        }
+
+
         AnimationComponent anim = player.getComponent(AnimationComponent.class);
         if (anim != null && sprite != null) {
             anim.setDirection("down");
             sprite.region = anim.getCurrentFrame();
         }
-
-        // 🔸 Inicializar o Locket e adicioná-lo ao gestor
-        locketManager = new LocketManager();
-        locketTexture = new Texture(Gdx.files.internal("locket.png"));
-        locket = new Locket(680, 710); // Posição inicial do medalhão
-        locketManager.addLocket(locket, this);
-
-        // 🔸 Adicionar o jogador ao sistema de entidades
-        entityManager.addEntity(player);
     }
 
+    private void setupInput() {
+        Gdx.input.setInputProcessor(new InputAdapter() {
+            @Override
+            public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+                if (button == Input.Buttons.LEFT) {
+                    Vector3 worldCoords = camera.unproject(new Vector3(screenX, screenY, 0));
+                    int tileX = (int) (worldCoords.x / TILE_SIZE);
+                    int tileY = (int) (worldCoords.y / TILE_SIZE);
+                    movePlayerTo(tileX, tileY);
+                    return true;
+                }
+                return false;
+            }
+        });
+    }
 
+    private void movePlayerTo(int targetX, int targetY) {
+        PositionComponent pos = player.getComponent(PositionComponent.class);
+        if (pos == null) return;
+
+        int startX = (int) (pos.x / TILE_SIZE);
+        int startY = (int) (pos.y / TILE_SIZE);
+
+        try {
+            AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("casahagrid.txt"));
+            List<Node> path = pathfinder.findPath(startX, startY, targetX, targetY);
+
+            if (path != null && !path.isEmpty() && path.get(0).x == startX && path.get(0).y == startY) {
+                path.remove(0);
+            }
+
+            if (path != null && !path.isEmpty()) {
+                PathComponent pathComp = player.getComponent(PathComponent.class);
+                if (pathComp == null) {
+                    pathComp = new PathComponent();
+                    player.addComponent(pathComp);
+                }
+                pathComp.setPath(path);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public void render(float delta) {
         handleInput();
 
-        AnimationComponent anim = player.getComponent(AnimationComponent.class);
+        PositionComponent pos = player.getComponent(PositionComponent.class);
+        VelocityComponent vel = player.getComponent(VelocityComponent.class);
         SpriteComponent sprite = player.getComponent(SpriteComponent.class);
+        AnimationComponent anim = player.getComponent(AnimationComponent.class);
+
         if (anim != null && sprite != null) {
             anim.update(delta);
             sprite.region = anim.getCurrentFrame();
         }
 
-        PositionComponent pos = player.getComponent(PositionComponent.class);
-        VelocityComponent vel = player.getComponent(VelocityComponent.class);
-
-        // ✅ ATUALIZA os lockets (recolha do medalhão)
-        if (pos != null && vel != null) {
-            locketManager.updateAndNotifyLockets(pos.x, pos.y, inventory);
-            checkTriggers(pos.x, pos.y); // <-- aqui está perfeito
-        }
-
-
         if (pos != null && vel != null && sprite != null) {
+            locketManager.updateAndNotifyLockets(pos.x, pos.y, inventory);
+            checkTriggers(pos.x, pos.y);
+
             PathComponent path = player.getComponent(PathComponent.class);
             if (path != null && !path.path.isEmpty()) {
                 Node next = path.path.peek();
-                float targetX = next.x * 32;
-                float targetY = next.y * 32;
-
-                float speed = vel.speed * delta;
+                float targetX = next.x * TILE_SIZE;
+                float targetY = next.y * TILE_SIZE;
                 float dx = targetX - pos.x;
                 float dy = targetY - pos.y;
                 float dist = (float) Math.sqrt(dx * dx + dy * dy);
+                float speed = vel.speed * delta;
 
                 if (dist < speed) {
                     pos.x = targetX;
@@ -181,11 +201,10 @@ public class HagridHouseScreen implements Screen {
                     vel.vx = (dx / dist) * vel.speed;
                     vel.vy = (dy / dist) * vel.speed;
 
-                    if (Math.abs(dx) > Math.abs(dy)) {
+                    if (Math.abs(dx) > Math.abs(dy))
                         anim.setDirection(dx > 0 ? "right" : "left");
-                    } else {
+                    else
                         anim.setDirection(dy > 0 ? "up" : "down");
-                    }
                 }
             } else {
                 vel.vx = 0;
@@ -194,23 +213,16 @@ public class HagridHouseScreen implements Screen {
 
             float nextX = pos.x + vel.vx * delta;
             float nextY = pos.y + vel.vy * delta;
+            float width = TILE_SIZE * sprite.scale;
+            float height = TILE_SIZE * sprite.scale;
 
-            float spriteWidth = 32 * sprite.scale;
-            float spriteHeight = 32 * sprite.scale;
+            if (!collisionMap.isBlocked(nextX, pos.y, width, height)) pos.x = nextX;
+            if (!collisionMap.isBlocked(pos.x, nextY, width, height)) pos.y = nextY;
 
-            if (!collisionMap.isBlocked(nextX, pos.y, spriteWidth, spriteHeight)) {
-                pos.x = nextX;
-            }
-            if (!collisionMap.isBlocked(pos.x, nextY, spriteWidth, spriteHeight)) {
-                pos.y = nextY;
-            }
+            pos.x = Math.max(0, Math.min(pos.x, mapWidth - width));
+            pos.y = Math.max(0, Math.min(pos.y, mapHeight - height));
 
-            pos.x = Math.max(0, Math.min(pos.x, mapWidth - spriteWidth));
-            pos.y = Math.max(0, Math.min(pos.y, mapHeight - spriteHeight));
-        }
-
-        if (pos != null) {
-            camera.position.set(pos.x + 32, pos.y + 32, 0);
+            camera.position.set(pos.x + TILE_SIZE, pos.y + TILE_SIZE, 0);
         }
 
         clampCameraPosition();
@@ -223,10 +235,7 @@ public class HagridHouseScreen implements Screen {
         batch.begin();
         batch.draw(mapTexture, 0, 0);
         renderSystem.render(batch, entityManager.getEntities());
-
-        // ✅ Renderiza o locket (animação do objeto)
         locketManager.render(batch, locketTexture, delta);
-
         // --- INVENTÁRIO VISUAL ---
         float inventoryX = camera.position.x + (camera.viewportWidth / 2) - 80;
         float inventoryY = camera.position.y - (camera.viewportHeight / 2) + 160;
@@ -247,6 +256,9 @@ public class HagridHouseScreen implements Screen {
         batch.draw(whitePixel, inventoryX - 16, inventoryY - 140, 180, 150);
         batch.setColor(Color.WHITE);
 
+
+// Aceder ao inventário através do game
+        Inventory inventory = game.getInventory();
 
 
         // Fundo do inventário
@@ -290,132 +302,40 @@ public class HagridHouseScreen implements Screen {
             inventoryY - iconSize * 4.5f - 32 + 6);
 
         batch.end();
-        // 🔴 Desenhar ponto vermelho na saída da casa do Hagrid
-        ShapeRenderer shapeRenderer = new ShapeRenderer();
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.RED);
-        shapeRenderer.circle(7 * TILE_SIZE + 16, 34 * TILE_SIZE + 16, 6); // centro do tile
-        shapeRenderer.end();
-        shapeRenderer.dispose(); // limpa o recurso após uso
-
-    }
 
 
-    private void setupInput() {
-        Gdx.input.setInputProcessor(new InputAdapter() {
-            @Override
-            public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-                if (button == Input.Buttons.LEFT) {
-                    Vector3 worldCoords = camera.unproject(new Vector3(screenX, screenY, 0));
-                    int tileX = (int) (worldCoords.x / 32);
-                    int tileY = (int) (worldCoords.y / 32);
-
-                    movePlayerTo(tileX, tileY);
-                    return true;
-                }
-                return false;
-            }
-        });
-    }
-
-    private void movePlayerTo(int targetX, int targetY) {
-        PositionComponent pos = player.getComponent(PositionComponent.class);
-        if (pos == null) return;
-
-        int startX = (int) (pos.x / 32);
-        int startY = (int) (pos.y / 32);
-
-        System.out.println("Início: " + startX + "," + startY + " | Destino: " + targetX + "," + targetY);
-
-
-        try {
-            AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("casahagrid.txt"));
-            List<Node> path = pathfinder.findPath(startX, startY, targetX, targetY);
-
-// ✅ Remover primeiro passo se for a posição atual do jogador
-            if (path != null && !path.isEmpty() && path.get(0).x == startX && path.get(0).y == startY) {
-                path.remove(0);
-            }
-
-            if (path != null && !path.isEmpty()) {
-                PathComponent pathComp = player.getComponent(PathComponent.class);
-                if (pathComp == null) {
-                    pathComp = new PathComponent();
-                    player.addComponent(pathComp);
-                }
-                pathComp.setPath(path);
-            }
-
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        // 🔴 Só mostra ponto vermelho se já tiver o medalhão
+        if (inventory.getItemCount(ItemType.LOCKET) > 0) {
+            ShapeRenderer shapeRenderer = new ShapeRenderer();
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.RED);
+            // Ponto vermelho na tile de saída (ajustada para evitar loop)
+            shapeRenderer.circle(15 * TILE_SIZE + TILE_SIZE / 2f, 1 * TILE_SIZE + TILE_SIZE / 2f, 6);;// centro do mapa
+            shapeRenderer.end();
+            shapeRenderer.dispose();
         }
-    }
-
-    private void handleInput() {
-        VelocityComponent vel = player.getComponent(VelocityComponent.class);
-        AnimationComponent anim = player.getComponent(AnimationComponent.class);
-
-        if (vel == null || anim == null) return;
-
-        if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            vel.vy = 100;
-            vel.vx = 0;
-            anim.setDirection("up");
-        } else if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            vel.vy = -100;
-            vel.vx = 0;
-            anim.setDirection("down");
-        } else if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            vel.vx = -100;
-            vel.vy = 0;
-            anim.setDirection("left");
-        } else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            vel.vx = 100;
-            vel.vy = 0;
-            anim.setDirection("right");
-        }
-    }
-
-    private void clampCameraPosition() {
-        float halfWidth = camera.viewportWidth / 2f;
-        float halfHeight = camera.viewportHeight / 2f;
-
-        float minX = halfWidth;
-        float maxX = mapWidth - halfWidth;
-        float minY = halfHeight;
-        float maxY = mapHeight - halfHeight;
-
-        camera.position.x = Math.max(minX, Math.min(camera.position.x, maxX));
-        camera.position.y = Math.max(minY, Math.min(camera.position.y, maxY));
     }
 
     private void checkTriggers(float x, float y) {
         int tileX = (int) (x / TILE_SIZE);
         int tileY = (int) (y / TILE_SIZE);
 
-        System.out.println("tileX = " + tileX + ", tileY = " + tileY); // debug
-
         PathComponent pathComp = player.getComponent(PathComponent.class);
-
         if (pathComp != null && pathComp.path.isEmpty()) {
-            if (tileX == 6 && tileY == 33 && inventory.getItemCount(ItemType.LOCKET) > 0) {
+            if (tileX == 15 && tileY == 1 && inventory.getItemCount(ItemType.LOCKET) > 0) {
                 if (batch.isDrawing()) batch.end();
 
                 Gdx.app.postRunnable(() -> {
                     PositionComponent pos = player.getComponent(PositionComponent.class);
                     SpriteComponent sprite = player.getComponent(SpriteComponent.class);
-
                     if (pos != null) {
-                        pos.x = 7 * TILE_SIZE;   // Volta para fora da casa, junto à entrada
+                        pos.x = 8 * TILE_SIZE;
                         pos.y = 34 * TILE_SIZE;
                     }
-
                     if (sprite != null) {
-                        sprite.scale = 2f; // Volta ao tamanho do mundo exterior
+                        sprite.scale = 1f;
                     }
-
                     game.setScreen(new GameScreen(game, player, playerTexture));
                     dispose();
                 });
@@ -423,9 +343,30 @@ public class HagridHouseScreen implements Screen {
         }
     }
 
+    private void handleInput() {
+        VelocityComponent vel = player.getComponent(VelocityComponent.class);
+        AnimationComponent anim = player.getComponent(AnimationComponent.class);
+        if (vel == null || anim == null) return;
 
+        if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+            vel.vy = 100; vel.vx = 0; anim.setDirection("up");
+        } else if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+            vel.vy = -100; vel.vx = 0; anim.setDirection("down");
+        } else if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+            vel.vx = -100; vel.vy = 0; anim.setDirection("left");
+        } else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+            vel.vx = 100; vel.vy = 0; anim.setDirection("right");
+        } else {
+            vel.vx = 0; vel.vy = 0;
+        }
+    }
 
-
+    private void clampCameraPosition() {
+        float hw = camera.viewportWidth / 2f;
+        float hh = camera.viewportHeight / 2f;
+        camera.position.x = Math.max(hw, Math.min(camera.position.x, mapWidth - hw));
+        camera.position.y = Math.max(hh, Math.min(camera.position.y, mapHeight - hh));
+    }
 
     @Override public void resize(int width, int height) {
         camera.viewportWidth = width;
@@ -439,7 +380,9 @@ public class HagridHouseScreen implements Screen {
 
     @Override
     public void dispose() {
-        if (batch != null) batch.dispose();
-        if (mapTexture != null) mapTexture.dispose();
+        batch.dispose();
+        mapTexture.dispose();
+        whitePixel.dispose();
+        font.dispose();
     }
 }

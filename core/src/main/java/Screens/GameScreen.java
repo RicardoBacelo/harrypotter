@@ -22,6 +22,8 @@ import com.bd2r.game.factory.EntityFactory;
 import com.bd2r.game.pathfinder.AStarPathfinder;
 import com.bd2r.game.pathfinder.Node;
 
+import com.badlogic.gdx.utils.TimeUtils;
+
 import java.util.List;
 
 public class GameScreen implements Screen {
@@ -64,6 +66,20 @@ public class GameScreen implements Screen {
     private Texture whitePixel;
     private final MainGame game;
 
+    private boolean paused = false;
+    private static final float PLAYER_SPEED = 50f;
+
+    private boolean gameWon = false;
+    private long winTime = 0;
+
+
+
+    //  Coruja
+    private Texture owlTexture;
+    private Entity owl;
+    private long lastDirectionChangeTime;
+
+
     public GameScreen(MainGame game, Entity player, Texture playerTexture) {
         this.game = game;
         this.inventory = game.getInventory();
@@ -102,6 +118,12 @@ public class GameScreen implements Screen {
             player = EntityFactory.createPlayer(485, 60, playerTexture);
         }
         entityManager.addEntity(player);
+        // ⚠️ Corrigir velocidade ao voltar da casa
+        VelocityComponent vel = player.getComponent(VelocityComponent.class);
+        if (vel != null) {
+            vel.speed = PLAYER_SPEED;  // Usa o valor definido no topo (100f)
+        }
+
 
         SpriteComponent sprite = player.getComponent(SpriteComponent.class);
         if (sprite != null) {
@@ -109,35 +131,58 @@ public class GameScreen implements Screen {
         }
 
 
-
+        // COINS
         coinManager = new CoinManager();
         coinTexture = new Texture(Gdx.files.internal("coin.png"));
-        coinManager.addCoin(new Coin(500, 100), this);
-        coinManager.addCoin(new Coin(400, 150), this);
         coinIcon = new Texture(Gdx.files.internal("coin.png"));
+        if (!inventory.hasItem(ItemType.COIN)) {
+            coinManager.addCoin(new Coin(700, 100), this);
+            coinManager.addCoin(new Coin(400, 200), this);
+        }
 
+// SILVER KEY
         silverKeyManager = new SilverKeyManager();
         silverKeyTexture = new Texture(Gdx.files.internal("House_Key.png"));
-        silverKeyManager.addSilverKey(new SilverKey(500, 150), this);
         silverKeyIcon = new Texture(Gdx.files.internal("House_Key.png"));
+        if (!inventory.hasItem(ItemType.SILVER_KEY)) {
+            silverKeyManager.addSilverKey(new SilverKey(450, 150), this);
+        }
 
+// GOLDEN KEY
         goldenKeyManager = new GoldenKeyManager();
         goldenKeyTexture = new Texture(Gdx.files.internal("Castle_Key.png"));
-        goldenKeyManager.addGoldenKey(new GoldenKey(750, 150), this);
         goldenKeyIcon = new Texture(Gdx.files.internal("Castle_Key.png"));
+        if (!inventory.hasItem(ItemType.GOLDEN_KEY)) {
+            goldenKeyManager.addGoldenKey(new GoldenKey(650, 150), this);
+        }
 
+// LOCKET (caso não seja apanhado noutro ecrã, podes deixar ou remover aqui)
         locketManager = new LocketManager();
         locketTexture = new Texture(Gdx.files.internal("locket.png"));
         locketIcon = new Texture(Gdx.files.internal("locket.png"));
 
+// WAND (caso seja apanhada noutro ecrã, apenas carrega a textura e ícone)
         wandManager = new WandManager();
         wandTexture = new Texture(Gdx.files.internal("Wand.png"));
         wandIcon = new Texture(Gdx.files.internal("Wand.png"));
+
+
+        //curuja
+        owlTexture = new Texture(Gdx.files.internal("owl.png"));
+        TextureRegion owlRegion = new TextureRegion(owlTexture);
+        owl = EntityFactory.createOwl(300, 300, owlTexture);
+        entityManager.addEntity(owl);
+        lastDirectionChangeTime = TimeUtils.millis();
     }
+
 
     @Override
     public void render(float delta) {
         try {
+
+            if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
+                paused = !paused;
+            }
 
             handleInput();
             movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
@@ -145,54 +190,75 @@ public class GameScreen implements Screen {
 
 
             PositionComponent pos = player.getComponent(PositionComponent.class);
+
             coinManager.updateAndNotifyCoins(pos.x, pos.y, inventory);
             silverKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
             goldenKeyManager.updateAndNotifyKeys(pos.x, pos.y, inventory);
             locketManager.updateAndNotifyLockets(pos.x, pos.y, inventory);
             wandManager.updateAndNotifyWands(pos.x, pos.y, inventory);
 
-            camera.position.set(pos.x + 16, pos.y + 16, 0);
-            clampCameraPosition();
-            camera.update();
+            if (!paused) {
+                handleInput();
+                movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
+                player.getComponent(AnimationComponent.class).update(delta);
 
-            Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
-            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+                //crouja
+                VelocityComponent owlVel = owl.getComponent(VelocityComponent.class);
+                PositionComponent owlPos = owl.getComponent(PositionComponent.class);
 
-            if (Gdx.input.justTouched()) {
-                try {
-                    float worldX = camera.position.x - camera.viewportWidth / 2 + Gdx.input.getX();
-                    float worldY = camera.position.y + camera.viewportHeight / 2 - Gdx.input.getY();
-
-                    int tileX = (int) (worldX / TILE_SIZE);
-                    int tileY = (int) (worldY / TILE_SIZE);
-
-                    int startX = (int) (pos.x / TILE_SIZE);
-                    int startY = (int) (pos.y / TILE_SIZE);
-
-                    AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("mapa.txt"));
-                    List<Node> path = pathfinder.findPath(startX, startY, tileX, tileY);
-
-                   // ✅ Remover primeiro passo se for o mesmo tile onde o jogador já está
-                    if (path != null && !path.isEmpty() && path.get(0).x == startX && path.get(0).y == startY) {
-                        path.remove(0);
-                    }
-
-                    if (path != null && !path.isEmpty()) {
-                        PathComponent pathComp = player.getComponent(PathComponent.class);
-                        if (pathComp == null) {
-                            pathComp = new PathComponent();
-                            player.addComponent(pathComp);
-                        }
-                        pathComp.setPath(path);
-                    }
-
-
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if (TimeUtils.timeSinceMillis(lastDirectionChangeTime) > 1000) {
+                    float[] speeds = {-50, 0, 50};
+                    owlVel.vx = speeds[(int) (Math.random() * speeds.length)];
+                    owlVel.vy = speeds[(int) (Math.random() * speeds.length)];
+                    lastDirectionChangeTime = TimeUtils.millis();
                 }
-            }
 
-            // Desenhar mapa e entidades
+                if (owlPos.x < 0 || owlPos.x > mapWidth - TILE_SIZE) owlVel.vx *= -1;
+                if (owlPos.y < 0 || owlPos.y > mapHeight - TILE_SIZE) owlVel.vy *= -1;
+
+
+                camera.position.set(pos.x + 16, pos.y + 16, 0);
+                clampCameraPosition();
+                camera.update();
+
+                Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
+                Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+                if (Gdx.input.justTouched()) {
+                    try {
+                        float worldX = camera.position.x - camera.viewportWidth / 2 + Gdx.input.getX();
+                        float worldY = camera.position.y + camera.viewportHeight / 2 - Gdx.input.getY();
+
+                        int tileX = (int) (worldX / TILE_SIZE);
+                        int tileY = (int) (worldY / TILE_SIZE);
+
+                        int startX = (int) (pos.x / TILE_SIZE);
+                        int startY = (int) (pos.y / TILE_SIZE);
+
+                        AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("mapa.txt"));
+                        List<Node> path = pathfinder.findPath(startX, startY, tileX, tileY);
+
+                        // ✅ Remover primeiro passo se for o mesmo tile onde o jogador já está
+                        if (path != null && !path.isEmpty() && path.get(0).x == startX && path.get(0).y == startY) {
+                            path.remove(0);
+                        }
+
+                        if (path != null && !path.isEmpty()) {
+                            PathComponent pathComp = player.getComponent(PathComponent.class);
+                            if (pathComp == null) {
+                                pathComp = new PathComponent();
+                                player.addComponent(pathComp);
+                            }
+                            pathComp.setPath(path);
+                        }
+
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            } // Desenhar mapa e entidades
             batch.begin();
             checkTriggers(pos.x, pos.y);
             batch.draw(mapTexture, 0, 0);
@@ -208,6 +274,13 @@ public class GameScreen implements Screen {
             shapeRenderer.setColor(Color.RED);
             shapeRenderer.circle(7 * TILE_SIZE + 16, 34 * TILE_SIZE + 16, 6);
             shapeRenderer.end();
+
+            // 🟢 Ponto de vitória do jogo (tile 20,5)
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.LIME);
+            shapeRenderer.circle(22 * TILE_SIZE + 16, 3 * TILE_SIZE + 16, 6);
+            shapeRenderer.end();
+
 
             // Desenhar inventário com ícones
             batch.begin();
@@ -257,6 +330,31 @@ public class GameScreen implements Screen {
             font.draw(batch, "x " + inventory.getItemCount(ItemType.WAND),
                 inventoryX + iconSize + paddingY,
                 inventoryY - iconSize * 4.5f - 32 + 6);
+
+            if (paused) {
+                font.getData().setScale(2.5f);
+                font.setColor(Color.RED);
+                font.draw(batch, "Jogo Pausado", camera.position.x - 100, camera.position.y);
+                font.getData().setScale(1.0f);
+                font.setColor(Color.WHITE);
+            }
+
+            if (gameWon) {
+                font.getData().setScale(2f);
+                font.setColor(Color.YELLOW);
+                font.draw(batch, "🎉 YOU WIN! GAME OVER 🎉", camera.position.x - 140, camera.position.y + 40);
+                font.setColor(Color.WHITE);
+                font.getData().setScale(1f);
+
+                // Fecha o jogo após 3 segundos
+                if (TimeUtils.timeSinceMillis(winTime) > 3000) {
+                    Gdx.app.exit();
+                }
+            }
+
+
+
+
 
             batch.end();
 
@@ -350,6 +448,21 @@ public class GameScreen implements Screen {
             if (tileX == 23 && tileY == 10 && inventory.getItemCount(ItemType.GOLDEN_KEY) == 0) {
                 System.out.println("🚪 Porta trancada. Precisas da Golden Key.");
             }
+
+            if (tileX == 22 && tileY == 3 &&
+                inventory.hasItem(ItemType.COIN) &&
+                inventory.hasItem(ItemType.SILVER_KEY) &&
+                inventory.hasItem(ItemType.GOLDEN_KEY) &&
+                inventory.hasItem(ItemType.LOCKET) &&
+                inventory.hasItem(ItemType.WAND)) {
+
+                if (!gameWon) {
+                    gameWon = true;
+                    winTime = TimeUtils.millis();
+                    System.out.println("🎉 YOU WIN! PARABÉNS! 🎉");
+                }
+            }
+
         }
     }
 
@@ -372,5 +485,6 @@ public class GameScreen implements Screen {
         goldenKeyManager.dispose();
         whitePixel.dispose();
         font.dispose();
+        owlTexture.dispose();
     }
 }

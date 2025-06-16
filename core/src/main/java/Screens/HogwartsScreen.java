@@ -121,6 +121,11 @@ public class HogwartsScreen implements Screen {
         }
 
         entityManager.addEntity(player);
+        VelocityComponent vel = player.getComponent(VelocityComponent.class);
+        if (vel != null) {
+            vel.speed = 100f; // ou o valor que quiseres dentro de Hogwarts
+        }
+
     }
 
     @Override

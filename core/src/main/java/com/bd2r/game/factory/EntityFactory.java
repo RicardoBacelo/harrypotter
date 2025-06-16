@@ -1,5 +1,6 @@
 package com.bd2r.game.factory;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.bd2r.game.ecs.Entity;
@@ -13,16 +14,13 @@ public class EntityFactory {
     public static Entity createPlayer(float x, float y, Texture spriteSheet) {
         Entity player = new Entity();
 
-        // Dividir spritesheet do jogador em tiles de 32x32
         TextureRegion[][] tmp = TextureRegion.split(spriteSheet, 32, 32);
 
-        // Separar frames para cada direção
         TextureRegion[] walkDownFrames  = tmp[0];
         TextureRegion[] walkLeftFrames  = tmp[1];
         TextureRegion[] walkRightFrames = tmp[2];
         TextureRegion[] walkUpFrames    = tmp[3];
 
-        // Criar animações para cada direção
         AnimationComponent anim = new AnimationComponent(0.2f);
         anim.addAnimation("down", walkDownFrames);
         anim.addAnimation("up", walkUpFrames);
@@ -30,7 +28,6 @@ public class EntityFactory {
         anim.addAnimation("right", walkRightFrames);
         anim.setDirection("down");
 
-        // Adicionar componentes ao jogador
         player.addComponent(new PositionComponent(x, y));
         player.addComponent(new VelocityComponent(0f, 0f, 100f));
         player.addComponent(anim);
@@ -42,7 +39,7 @@ public class EntityFactory {
     public static Entity createOwl(float x, float y, Texture owlTexture) {
         Entity owl = new Entity();
 
-        // Dividir spritesheet da coruja em 3 linhas × 3 colunas
+        // Dividir spritesheet em 4 colunas × 3 linhas (12 frames)
         TextureRegion[][] tmp = TextureRegion.split(owlTexture, 32, 32);
         TextureRegion[] frames = new TextureRegion[9];
         int index = 0;
@@ -52,12 +49,10 @@ public class EntityFactory {
             }
         }
 
-        // Criar animação da coruja (voar)
-        AnimationComponent anim = new AnimationComponent(0.1f);
+        AnimationComponent anim = new AnimationComponent(0.1f); // velocidade da animação
         anim.addAnimation("fly", frames);
         anim.setDirection("fly");
 
-        // Adicionar componentes à coruja
         owl.addComponent(new PositionComponent(x, y));
         owl.addComponent(new VelocityComponent(0f, 0f, 50f));
         owl.addComponent(anim);
@@ -65,15 +60,36 @@ public class EntityFactory {
 
         return owl;
     }
-
     public static Entity createGhost(float x, float y, TextureRegion sprite) {
         Entity ghost = new Entity();
-
-        // Fantasma com movimento lento e sem animação (só uma frame)
         ghost.addComponent(new PositionComponent(x, y));
-        ghost.addComponent(new VelocityComponent(0f, 0f, 30f));
+        ghost.addComponent(new VelocityComponent(0f, 0f, 30f)); // lento/flutuante
         ghost.addComponent(new SpriteComponent(sprite, 1f));
-
         return ghost;
     }
+    public static Entity createSpider(float x, float y, Texture spiderTexture) {
+        Entity spider = new Entity();
+
+        TextureRegion[][] tmp = TextureRegion.split(spiderTexture, 32, 32);
+        TextureRegion[] frames = new TextureRegion[12];
+        int index = 0;
+        for (int row = 0; row < 4; row++) {
+            for (int col = 0; col < 3; col++) {
+                frames[index++] = tmp[row][col];
+            }
+        }
+
+        AnimationComponent anim = new AnimationComponent(0.12f);
+        anim.addAnimation("move", frames);
+        anim.setDirection("move");
+
+        spider.addComponent(new PositionComponent(x, y));
+        spider.addComponent(new VelocityComponent(0f, 0f, 40f)); // movimento lento
+        spider.addComponent(anim);
+        spider.addComponent(new SpriteComponent(anim.getCurrentFrame(), 1f));
+
+        return spider;
+    }
+
+
 }

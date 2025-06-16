@@ -16,7 +16,9 @@ public class AStarPathfinder {
         Node startNode = new Node(startX, startY);
         Node endNode = new Node(endX, endY);
 
+        // Lista de nós por visitar, ordenada pelo custo total f = g + h
         PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparing(Node::getFCost));
+        // Lista de nós já visitados
         HashSet<Node> closedSet = new HashSet<>();
 
         openSet.add(startNode);
@@ -24,19 +26,23 @@ public class AStarPathfinder {
         while (!openSet.isEmpty()) {
             Node current = openSet.poll();
 
+            // Chegou ao destino
             if (current.equals(endNode)) {
                 return reconstructPath(current);
             }
 
             closedSet.add(current);
 
+            // Ver todos os vizinhos válidos (não diagonais)
             for (Node neighbor : getNeighbors(current)) {
                 if (closedSet.contains(neighbor)) continue;
 
-                float tentativeGCost = current.gCost + 1;
+                float tentativeGCost = current.gCost + 1; // custo de movimento
 
+                // Se ainda não está no openSet ou encontrou caminho mais curto
                 if (!openSet.contains(neighbor) || tentativeGCost < neighbor.gCost) {
                     neighbor.gCost = tentativeGCost;
+                    // Distância Manhattan até ao destino
                     neighbor.hCost = Math.abs(neighbor.x - endNode.x) + Math.abs(neighbor.y - endNode.y);
                     neighbor.parent = current;
 
@@ -47,9 +53,11 @@ public class AStarPathfinder {
             }
         }
 
+        // Não encontrou caminho
         return new ArrayList<>();
     }
 
+    // Reconstruir caminho desde o fim até ao início
     private List<Node> reconstructPath(Node endNode) {
         List<Node> path = new ArrayList<>();
         Node current = endNode;
@@ -61,6 +69,7 @@ public class AStarPathfinder {
         return path;
     }
 
+    // Retorna os 4 vizinhos possíveis (cima, baixo, esquerda, direita) se forem válidos
     private List<Node> getNeighbors(Node node) {
         List<Node> neighbors = new ArrayList<>();
         int[][] directions = {
@@ -74,6 +83,7 @@ public class AStarPathfinder {
             int newX = node.x + dir[0];
             int newY = node.y + dir[1];
 
+            // Verifica se o vizinho está dentro dos limites do mapa e se é caminhável (1)
             if (newX >= 0 && newX < cols && newY >= 0 && newY < rows && map[newY][newX] == 1) {
                 neighbors.add(new Node(newX, newY));
             }

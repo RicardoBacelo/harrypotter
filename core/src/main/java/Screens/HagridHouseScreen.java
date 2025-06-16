@@ -18,29 +18,34 @@ import java.util.List;
 
 public class HagridHouseScreen implements Screen {
 
+    // Referências ao jogo e estado
     private final MainGame game;
     private final Entity player;
     private final Texture playerTexture;
     private final Inventory inventory;
 
+    // ECS e renderização
     private final EntityManager entityManager = new EntityManager();
     private final RenderSystem renderSystem = new RenderSystem();
 
+    // Gráficos e câmara
     private SpriteBatch batch;
     private OrthographicCamera camera;
     private Texture mapTexture;
     private int mapWidth, mapHeight;
     private CollisionMap collisionMap;
 
+    // UI
     private Texture whitePixel;
     private BitmapFont font;
 
+    // Sistema de coleta
     private LocketManager locketManager;
     private Texture locketTexture;
 
     private static final int TILE_SIZE = 32;
 
-    // Ícones
+    // Ícones do inventário
     private Texture coinIcon, silverKeyIcon, goldenKeyIcon, locketIcon, wandIcon;
 
     public HagridHouseScreen(MainGame game, Entity player, Texture playerTexture, Inventory inventory) {
@@ -54,29 +59,32 @@ public class HagridHouseScreen implements Screen {
     public void show() {
         batch = new SpriteBatch();
 
-        // Texturas e UI
+        // Inicializar fontes e elementos visuais
         font = new BitmapFont();
         font.getData().setScale(1f);
         whitePixel = createWhitePixel();
 
+        // Carregar ícones
         coinIcon = new Texture(Gdx.files.internal("coin.png"));
         silverKeyIcon = new Texture(Gdx.files.internal("House_Key.png"));
         goldenKeyIcon = new Texture(Gdx.files.internal("Castle_Key.png"));
         locketIcon = new Texture(Gdx.files.internal("locket.png"));
         wandIcon = new Texture(Gdx.files.internal("Wand.png"));
 
+        // Carregar mapa e colisões
         mapTexture = new Texture(Gdx.files.internal("casa.jpg"));
         mapWidth = mapTexture.getWidth();
         mapHeight = mapTexture.getHeight();
         collisionMap = new CollisionMap("casahagrid.txt");
 
+        // Câmara
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         setupPlayer();
         setupInput();
 
-        // Locket
+        // Adicionar locket
         locketManager = new LocketManager();
         locketTexture = new Texture(Gdx.files.internal("locket.png"));
         locketManager.addLocket(new Locket(680, 710), this);
@@ -93,6 +101,7 @@ public class HagridHouseScreen implements Screen {
         return tex;
     }
 
+    // Define posição, escala e velocidade do jogador
     private void setupPlayer() {
         PositionComponent pos = player.getComponent(PositionComponent.class);
         if (pos != null) {
@@ -107,11 +116,10 @@ public class HagridHouseScreen implements Screen {
 
         VelocityComponent vel = player.getComponent(VelocityComponent.class);
         if (vel == null) {
-            player.addComponent(new VelocityComponent(0, 0, 150f)); // nova velocidade
+            player.addComponent(new VelocityComponent(0, 0, 150f));
         } else {
-            vel.speed = 150f; // força nova velocidade mesmo que já exista
+            vel.speed = 150f;
         }
-
 
         AnimationComponent anim = player.getComponent(AnimationComponent.class);
         if (anim != null && sprite != null) {
@@ -120,6 +128,7 @@ public class HagridHouseScreen implements Screen {
         }
     }
 
+    // Regista toques no ecrã para iniciar movimento
     private void setupInput() {
         Gdx.input.setInputProcessor(new InputAdapter() {
             @Override
@@ -136,6 +145,7 @@ public class HagridHouseScreen implements Screen {
         });
     }
 
+    // Gera caminho com A* para onde o jogador tocou
     private void movePlayerTo(int targetX, int targetY) {
         PositionComponent pos = player.getComponent(PositionComponent.class);
         if (pos == null) return;
@@ -174,15 +184,18 @@ public class HagridHouseScreen implements Screen {
         SpriteComponent sprite = player.getComponent(SpriteComponent.class);
         AnimationComponent anim = player.getComponent(AnimationComponent.class);
 
+        // Atualiza animação do jogador
         if (anim != null && sprite != null) {
             anim.update(delta);
             sprite.region = anim.getCurrentFrame();
         }
 
         if (pos != null && vel != null && sprite != null) {
+            // Verifica colisão com o locket
             locketManager.updateAndNotifyLockets(pos.x, pos.y, inventory);
             checkTriggers(pos.x, pos.y);
 
+            // Movimento por pathfinding
             PathComponent path = player.getComponent(PathComponent.class);
             if (path != null && !path.path.isEmpty()) {
                 Node next = path.path.peek();
@@ -211,6 +224,7 @@ public class HagridHouseScreen implements Screen {
                 vel.vy = 0;
             }
 
+            // Verifica colisões
             float nextX = pos.x + vel.vx * delta;
             float nextY = pos.y + vel.vy * delta;
             float width = TILE_SIZE * sprite.scale;
@@ -229,6 +243,7 @@ public class HagridHouseScreen implements Screen {
         camera.update();
         batch.setProjectionMatrix(camera.combined);
 
+        // Renderiza mapa e entidades
         Gdx.gl.glClearColor(0, 0, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
@@ -236,87 +251,52 @@ public class HagridHouseScreen implements Screen {
         batch.draw(mapTexture, 0, 0);
         renderSystem.render(batch, entityManager.getEntities());
         locketManager.render(batch, locketTexture, delta);
-        // --- INVENTÁRIO VISUAL ---
+
+        // UI do inventário
         float inventoryX = camera.position.x + (camera.viewportWidth / 2) - 80;
         float inventoryY = camera.position.y - (camera.viewportHeight / 2) + 160;
         int iconSize = 24;
         float paddingY = 4f;
 
-// Fundo do inventário
         batch.setColor(0f, 0f, 0f, 0.5f);
         batch.draw(whitePixel, inventoryX - 16, inventoryY - 160, 180, 180);
         batch.setColor(Color.WHITE);
 
-// Título
         font.draw(batch, "Inventário", inventoryX, inventoryY + 15);
 
-
-// Fundo translúcido
-        batch.setColor(0f, 0f, 0f, 0.5f);
-        batch.draw(whitePixel, inventoryX - 16, inventoryY - 140, 180, 150);
-        batch.setColor(Color.WHITE);
-
-
-// Aceder ao inventário através do game
-        Inventory inventory = game.getInventory();
-
-
-        // Fundo do inventário
-        batch.setColor(0f, 0f, 0f, 0.5f);
-        batch.draw(whitePixel, inventoryX - 16, inventoryY - 160, 180, 180);
-        batch.setColor(Color.WHITE);
-
-// Título
-        font.draw(batch, "Inventário", inventoryX, inventoryY + 15);
-
-// Moeda
+        // Mostra contagem dos itens
         batch.draw(coinIcon, inventoryX, inventoryY - iconSize, iconSize, iconSize);
-        font.draw(batch, "x " + inventory.getItemCount(ItemType.COIN),
-            inventoryX + iconSize + paddingY,
-            inventoryY - iconSize / 2f + 6);
+        font.draw(batch, "x " + inventory.getItemCount(ItemType.COIN), inventoryX + iconSize + paddingY, inventoryY - iconSize / 2f + 6);
 
-// Chave prata
         batch.draw(silverKeyIcon, inventoryX, inventoryY - iconSize * 2 - 8, iconSize, iconSize);
-        font.draw(batch, "x " + inventory.getItemCount(ItemType.SILVER_KEY),
-            inventoryX + iconSize + paddingY,
-            inventoryY - iconSize * 1.5f - 8 + 6);
+        font.draw(batch, "x " + inventory.getItemCount(ItemType.SILVER_KEY), inventoryX + iconSize + paddingY, inventoryY - iconSize * 1.5f - 8 + 6);
 
-// Chave dourada
         batch.draw(goldenKeyIcon, inventoryX, inventoryY - iconSize * 3 - 16, iconSize, iconSize);
-        font.draw(batch, "x " + inventory.getItemCount(ItemType.GOLDEN_KEY),
-            inventoryX + iconSize + paddingY,
-            inventoryY - iconSize * 2.5f - 16 + 6);
+        font.draw(batch, "x " + inventory.getItemCount(ItemType.GOLDEN_KEY), inventoryX + iconSize + paddingY, inventoryY - iconSize * 2.5f - 16 + 6);
 
-// Medalhão (locket)
         if (locketIcon != null) {
             batch.draw(locketIcon, inventoryX, inventoryY - iconSize * 4 - 24, iconSize, iconSize);
-            font.draw(batch, "x " + inventory.getItemCount(ItemType.LOCKET),
-                inventoryX + iconSize + paddingY,
-                inventoryY - iconSize * 3.5f - 24 + 6);
+            font.draw(batch, "x " + inventory.getItemCount(ItemType.LOCKET), inventoryX + iconSize + paddingY, inventoryY - iconSize * 3.5f - 24 + 6);
         }
 
-// Varinha
         batch.draw(wandIcon, inventoryX, inventoryY - iconSize * 5 - 32, iconSize, iconSize);
-        font.draw(batch, "x " + inventory.getItemCount(ItemType.WAND),
-            inventoryX + iconSize + paddingY,
-            inventoryY - iconSize * 4.5f - 32 + 6);
+        font.draw(batch, "x " + inventory.getItemCount(ItemType.WAND), inventoryX + iconSize + paddingY, inventoryY - iconSize * 4.5f - 32 + 6);
 
         batch.end();
 
-
-        // 🔴 Só mostra ponto vermelho se já tiver o medalhão
+        // Mostra ponto vermelho na porta de saída se tiveres o medalhão
         if (inventory.getItemCount(ItemType.LOCKET) > 0) {
             ShapeRenderer shapeRenderer = new ShapeRenderer();
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(Color.RED);
-            // Ponto vermelho na tile de saída (ajustada para evitar loop)
-            shapeRenderer.circle(15 * TILE_SIZE + TILE_SIZE / 2f, 1 * TILE_SIZE + TILE_SIZE / 2f, 6);;// centro do mapa
+            shapeRenderer.circle(15 * TILE_SIZE + TILE_SIZE / 2f, 1 * TILE_SIZE + TILE_SIZE / 2f, 6);
             shapeRenderer.end();
             shapeRenderer.dispose();
         }
     }
 
+    // Verifica se deves sair do ecrã
     private void checkTriggers(float x, float y) {
         int tileX = (int) (x / TILE_SIZE);
         int tileY = (int) (y / TILE_SIZE);
@@ -343,6 +323,7 @@ public class HagridHouseScreen implements Screen {
         }
     }
 
+    // Movimento com teclas (alternativo ao clique)
     private void handleInput() {
         VelocityComponent vel = player.getComponent(VelocityComponent.class);
         AnimationComponent anim = player.getComponent(AnimationComponent.class);
@@ -361,6 +342,7 @@ public class HagridHouseScreen implements Screen {
         }
     }
 
+    // Impede que a câmara saia dos limites do mapa
     private void clampCameraPosition() {
         float hw = camera.viewportWidth / 2f;
         float hh = camera.viewportHeight / 2f;
@@ -386,3 +368,4 @@ public class HagridHouseScreen implements Screen {
         font.dispose();
     }
 }
+

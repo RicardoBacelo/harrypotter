@@ -6,6 +6,8 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.bd2r.game.CollisionMap;
 import com.bd2r.game.MainGame;
 import com.bd2r.game.MapLoader;
@@ -53,6 +55,15 @@ public class HogwartsScreen implements Screen {
     private WandManager wandManager;
     private Texture wandTexture;
     private Wand wand;
+
+    // Fantasma
+    private Texture ghostTexture;
+    private TextureRegion[] ghostFrames;
+    private AnimationComponent ghostAnim;
+    private Entity ghost;
+    private boolean ghostMessageVisible = false;
+    private float ghostMessageTimer = 0f;
+    private final float GHOST_MESSAGE_DURATION = 3f;
 
 
     private static final int TILE_SIZE = 32;
@@ -126,6 +137,27 @@ public class HogwartsScreen implements Screen {
             vel.speed = 100f; // ou o valor que quiseres dentro de Hogwarts
         }
 
+        entityManager.addEntity(player);
+        // --- Inicializar Fantasma ---
+        ghostTexture = new Texture(Gdx.files.internal("ghost.png"));
+        TextureRegion[][] ghostTmp = TextureRegion.split(ghostTexture, 32, 32); // 3x3 frames esperados
+        ghostFrames = new TextureRegion[9];
+        int index = 0;
+        for (int i = 0; i < 1; i++) {
+            for (int j = 0; j < 1; j++) {
+                ghostFrames[index++] = ghostTmp[i][j];
+            }
+        }
+        ghostAnim = new AnimationComponent(0.1f);
+        ghostAnim.addAnimation("float", ghostFrames);
+        ghostAnim.setDirection("float");
+
+        ghost = new Entity();
+        ghost.addComponent(new PositionComponent(400, 300));
+        ghost.addComponent(new SpriteComponent(ghostFrames[0], 1.5f)); // escala maior para destacar
+        ghost.addComponent(new VelocityComponent(0f, 0f, 50f)); // velocidade fantasma
+        entityManager.addEntity(ghost);
+
     }
 
     @Override
@@ -134,6 +166,36 @@ public class HogwartsScreen implements Screen {
 
         movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
         animationSystem.update(entityManager.getEntities(), delta);
+
+        ghostAnim.update(delta);
+        // Movimento aleatório simples do fantasma
+        // Movimento aleatório simples do fantasma
+        // Movimento simples aleatório do fantasma (sem colisões, NPC básico)
+        if (MathUtils.randomBoolean(0.01f)) { // 1% chance por frame de mudar de direção
+            VelocityComponent ghostVel = ghost.getComponent(VelocityComponent.class);
+            if (ghostVel != null) {
+                float speed = 30f;
+                int dir = MathUtils.random(3);
+                ghostVel.vx = 0;
+                ghostVel.vy = 0;
+                switch (dir) {
+                    case 0:
+                        ghostVel.vx = speed;
+                        break;   // direita
+                    case 1:
+                        ghostVel.vx = -speed;
+                        break;  // esquerda
+                    case 2:
+                        ghostVel.vy = speed;
+                        break;   // cima
+                    case 3:
+                        ghostVel.vy = -speed;
+                        break;  // baixo
+                }
+
+            }
+        }
+
 
         PositionComponent pos = player.getComponent(PositionComponent.class);
         wandManager.updateAndNotifyWands(pos.x, pos.y, game.getInventory());

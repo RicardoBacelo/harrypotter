@@ -24,6 +24,7 @@ import com.bd2r.game.pathfinder.Node;
 
 import com.badlogic.gdx.utils.TimeUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class GameScreen implements Screen {
@@ -71,6 +72,8 @@ public class GameScreen implements Screen {
 
     private boolean gameWon = false;
     private long winTime = 0;
+    private List<Entity> owls;
+
 
 
 
@@ -166,13 +169,18 @@ public class GameScreen implements Screen {
         wandTexture = new Texture(Gdx.files.internal("Wand.png"));
         wandIcon = new Texture(Gdx.files.internal("Wand.png"));
 
-
-        //curuja
         owlTexture = new Texture(Gdx.files.internal("owl.png"));
-        TextureRegion owlRegion = new TextureRegion(owlTexture);
-        owl = EntityFactory.createOwl(300, 300, owlTexture);
-        entityManager.addEntity(owl);
-        lastDirectionChangeTime = TimeUtils.millis();
+        owls = new ArrayList<>();
+
+
+        for (int i = 0; i < 5; i++) { // número de corujas que quiseres
+            float x = (float)(Math.random() * mapWidth);
+            float y = (float)(Math.random() * mapHeight);
+            Entity owl = EntityFactory.createOwl(x, y, owlTexture);
+            owls.add(owl);
+            entityManager.addEntity(owl);
+        }
+
     }
 
 
@@ -202,19 +210,30 @@ public class GameScreen implements Screen {
                 movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
                 player.getComponent(AnimationComponent.class).update(delta);
 
-                //crouja
-                VelocityComponent owlVel = owl.getComponent(VelocityComponent.class);
-                PositionComponent owlPos = owl.getComponent(PositionComponent.class);
+                for (Entity owl : owls) {
+                    VelocityComponent owlVel = owl.getComponent(VelocityComponent.class);
+                    PositionComponent owlPos = owl.getComponent(PositionComponent.class);
+
+                }
+
 
                 if (TimeUtils.timeSinceMillis(lastDirectionChangeTime) > 1000) {
                     float[] speeds = {-50, 0, 50};
-                    owlVel.vx = speeds[(int) (Math.random() * speeds.length)];
-                    owlVel.vy = speeds[(int) (Math.random() * speeds.length)];
+
+                    for (Entity owl : owls) {
+                        VelocityComponent owlVel = owl.getComponent(VelocityComponent.class);
+                        PositionComponent owlPos = owl.getComponent(PositionComponent.class);
+
+                        owlVel.vx = speeds[(int) (Math.random() * speeds.length)];
+                        owlVel.vy = speeds[(int) (Math.random() * speeds.length)];
+
+                        if (owlPos.x < 0 || owlPos.x > mapWidth - TILE_SIZE) owlVel.vx *= -1;
+                        if (owlPos.y < 0 || owlPos.y > mapHeight - TILE_SIZE) owlVel.vy *= -1;
+                    }
+
                     lastDirectionChangeTime = TimeUtils.millis();
                 }
 
-                if (owlPos.x < 0 || owlPos.x > mapWidth - TILE_SIZE) owlVel.vx *= -1;
-                if (owlPos.y < 0 || owlPos.y > mapHeight - TILE_SIZE) owlVel.vy *= -1;
 
 
                 camera.position.set(pos.x + 16, pos.y + 16, 0);

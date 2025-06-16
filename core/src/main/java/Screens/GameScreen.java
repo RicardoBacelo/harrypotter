@@ -350,25 +350,19 @@ public class GameScreen implements Screen {
                 inventoryX + iconSize + paddingY,
                 inventoryY - iconSize * 4.5f - 32 + 6);
 
-            if (paused) {
+            /*if (paused) {
                 font.getData().setScale(2.5f);
                 font.setColor(Color.RED);
                 font.draw(batch, "Jogo Pausado", camera.position.x - 100, camera.position.y);
                 font.getData().setScale(1.0f);
                 font.setColor(Color.WHITE);
             }
+*/
+            if (paused) {
+                if (batch.isDrawing()) batch.end();
+                game.setScreen(new CongratulationsScreen(game));
 
-            if (gameWon) {
-                font.getData().setScale(2f);
-                font.setColor(Color.YELLOW);
-                font.draw(batch, "🎉 YOU WIN! GAME OVER 🎉", camera.position.x - 140, camera.position.y + 40);
-                font.setColor(Color.WHITE);
-                font.getData().setScale(1f);
-
-                // Fecha o jogo após 3 segundos
-                if (TimeUtils.timeSinceMillis(winTime) > 3000) {
-                    Gdx.app.exit();
-                }
+                dispose();
             }
 
 

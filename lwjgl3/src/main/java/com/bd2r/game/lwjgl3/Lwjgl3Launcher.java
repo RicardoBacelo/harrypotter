@@ -20,7 +20,7 @@ public class Lwjgl3Launcher {
         Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
 
         configuration.setTitle("HarryPotterDC");
-        configuration.setWindowedMode(800, 600);           // Tamanho seguro
+        configuration.setWindowedMode(1024, 720);           // Tamanho seguro
         configuration.setWindowPosition(0, 0);             // Força a abrir visível no ecrã
         configuration.useVsync(true);
         configuration.setForegroundFPS(

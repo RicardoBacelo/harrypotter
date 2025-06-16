@@ -1,3 +1,4 @@
+
 package Screens;
 
 import com.badlogic.gdx.Gdx;
@@ -11,24 +12,23 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.bd2r.game.MainGame;
 
-public class MenuScreen implements Screen {
+public class CongratulationsScreen implements Screen {
     private final MainGame game;
     private Stage stage;
     private Skin skin;
-    private Music menuMusic;
+    private Music music;
 
-
-    public MenuScreen(MainGame game) {  // Add constructor
+    public CongratulationsScreen(MainGame game) {
         this.game = game;
     }
+
     @Override
     public void show() {
-
-        // Load and play the music
-        menuMusic = Gdx.audio.newMusic(Gdx.files.internal("music/StartMenuSong.mp3"));
-        menuMusic.setLooping(true); // Makes the music loop
-        menuMusic.setVolume(1f); // Sets volume to 50%
-        menuMusic.play();
+        // Load and play victory music
+        music = Gdx.audio.newMusic(Gdx.files.internal("music/StartMenuSong.mp3"));
+        music.setLooping(true);
+        music.setVolume(1f);
+        music.play();
 
         stage = new Stage(new ScreenViewport());
         Gdx.input.setInputProcessor(stage);
@@ -41,25 +41,36 @@ public class MenuScreen implements Screen {
         mainTable.setFillParent(true);
         stage.addActor(mainTable);
 
-        // Add title label
-        Label titleLabel = new Label("Harry Potter", skin, "title");
-        mainTable.add(titleLabel).pad(50).row();
+        // Add congratulations title
+        Label congratsLabel = new Label("Congratulations!", skin, "title");
+        mainTable.add(congratsLabel).pad(30).row();
+
+        // Add message
+        Label messageLabel = new Label("You have completed the game!", skin);
+        mainTable.add(messageLabel).pad(20).row();
 
         // Create buttons table
         Table buttonTable = new Table();
 
-        // Play button
-        TextButton playButton = new TextButton("Play", skin);
-        playButton.addListener(new ClickListener() {
+        // Main Menu button
+        TextButton menuButton = new TextButton("Main Menu", skin);
+        menuButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                // Stop menu music when starting game
-                menuMusic.stop();
-                game.setScreen(new GameScreen(game));
-                Gdx.input.setInputProcessor(null);
+                music.stop();
+                game.setScreen(new MenuScreen(game));
             }
         });
 
+        // Play Again button
+        TextButton playAgainButton = new TextButton("Play Again", skin);
+        playAgainButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                music.stop();
+                game.setScreen(new GameScreen(game));
+            }
+        });
 
         // Exit button
         TextButton exitButton = new TextButton("Exit", skin);
@@ -71,35 +82,13 @@ public class MenuScreen implements Screen {
         });
 
         // Add buttons to button table with spacing
-        buttonTable.defaults().pad(10).width(200).height(100);
-        buttonTable.add(playButton).row();
+        buttonTable.defaults().pad(10).width(350).height(100);
+        buttonTable.add(playAgainButton).row();
+        buttonTable.add(menuButton).row();
         buttonTable.add(exitButton).row();
 
         // Add button table to main table
         mainTable.add(buttonTable);
-
-        // Optional: Add version label at bottom
-        Label versionLabel = new Label("v1.0", skin);
-        mainTable.add(versionLabel).padTop(50).row();
-    }
-    @Override
-    public void resize(int width, int height) {
-        stage.getViewport().update(width, height, true);
-    }
-
-    @Override
-    public void pause() {
-
-    }
-
-    @Override
-    public void resume() {
-
-    }
-
-    @Override
-    public void hide() {
-
     }
 
     @Override
@@ -109,7 +98,23 @@ public class MenuScreen implements Screen {
 
         stage.act(delta);
         stage.draw();
+    }
 
+    @Override
+    public void resize(int width, int height) {
+        stage.getViewport().update(width, height, true);
+    }
+
+    @Override
+    public void pause() {
+    }
+
+    @Override
+    public void resume() {
+    }
+
+    @Override
+    public void hide() {
     }
 
     @Override
@@ -120,9 +125,10 @@ public class MenuScreen implements Screen {
         if (skin != null) {
             skin.dispose();
         }
-        if (menuMusic != null) {
-            menuMusic.dispose();
+        if (music != null) {
+            music.dispose();
         }
-
     }
 }
+
+

@@ -157,7 +157,7 @@ public class HogwartsScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        handleInput();
+
 
         movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
         animationSystem.update(entityManager.getEntities(), delta);
@@ -314,39 +314,6 @@ public class HogwartsScreen implements Screen {
 
     }
 
-    private void handleInput() {
-        VelocityComponent vel = player.getComponent(VelocityComponent.class);
-        AnimationComponent anim = player.getComponent(AnimationComponent.class);
-        PathComponent path = player.getComponent(PathComponent.class);
-
-        if (vel == null || anim == null) return;
-
-        // ⚠️ Cancelar caminho ao usar teclas
-        if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            vel.vx = 0;
-            vel.vy = 100;
-            anim.setDirection("up");
-            if (path != null) path.path.clear();
-        } else if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            vel.vx = 0;
-            vel.vy = -100;
-            anim.setDirection("down");
-            if (path != null) path.path.clear();
-        } else if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            vel.vx = -100;
-            vel.vy = 0;
-            anim.setDirection("left");
-            if (path != null) path.path.clear();
-        } else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            vel.vx = 100;
-            vel.vy = 0;
-            anim.setDirection("right");
-            if (path != null) path.path.clear();
-        } else {
-            vel.vx = 0;
-            vel.vy = 0;
-        }
-    }
 
     private void clampCameraPosition() {
         float halfWidth = camera.viewportWidth / 2f;

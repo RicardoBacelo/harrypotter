@@ -52,15 +52,6 @@ public class CongratulationsScreen implements Screen {
         // Create buttons table
         Table buttonTable = new Table();
 
-        // Main Menu button
-        TextButton menuButton = new TextButton("Main Menu", skin);
-        menuButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                music.stop();
-                game.setScreen(new MenuScreen(game));
-            }
-        });
 
         // Play Again button
         TextButton playAgainButton = new TextButton("Play Again", skin);
@@ -84,7 +75,6 @@ public class CongratulationsScreen implements Screen {
         // Add buttons to button table with spacing
         buttonTable.defaults().pad(10).width(350).height(100);
         buttonTable.add(playAgainButton).row();
-        buttonTable.add(menuButton).row();
         buttonTable.add(exitButton).row();
 
         // Add button table to main table

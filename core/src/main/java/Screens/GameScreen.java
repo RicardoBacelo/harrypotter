@@ -14,7 +14,6 @@ import com.bd2r.game.Observer.*;
 import com.bd2r.game.ecs.entity.Entity;
 import com.bd2r.game.ecs.entity.EntityManager;
 import com.bd2r.game.ecs.components.*;
-
 import com.bd2r.game.ecs.systems.AnimationSystem;
 import com.bd2r.game.ecs.systems.MovementSystem;
 import com.bd2r.game.ecs.systems.RenderSystem;
@@ -121,7 +120,7 @@ public class GameScreen implements Screen {
             player = EntityFactory.createPlayer(485, 60, playerTexture);
         }
         entityManager.addEntity(player);
-        // ⚠️ Corrigir velocidade ao voltar da casa
+        //  Corrigir velocidade ao voltar da casa
         VelocityComponent vel = player.getComponent(VelocityComponent.class);
         if (vel != null) {
             vel.speed = PLAYER_SPEED;  // Usa o valor definido no topo (100f)
@@ -143,7 +142,7 @@ public class GameScreen implements Screen {
             coinManager.addCoin(new Coin(400, 200), this);
         }
 
-// SILVER KEY
+        // SILVER KEY
         silverKeyManager = new SilverKeyManager();
         silverKeyTexture = new Texture(Gdx.files.internal("House_Key.png"));
         silverKeyIcon = new Texture(Gdx.files.internal("House_Key.png"));
@@ -151,7 +150,7 @@ public class GameScreen implements Screen {
             silverKeyManager.addSilverKey(new SilverKey(450, 150), this);
         }
 
-// GOLDEN KEY
+        // GOLDEN KEY
         goldenKeyManager = new GoldenKeyManager();
         goldenKeyTexture = new Texture(Gdx.files.internal("Castle_Key.png"));
         goldenKeyIcon = new Texture(Gdx.files.internal("Castle_Key.png"));
@@ -159,12 +158,12 @@ public class GameScreen implements Screen {
             goldenKeyManager.addGoldenKey(new GoldenKey(650, 150), this);
         }
 
-// LOCKET (caso não seja apanhado noutro ecrã, podes deixar ou remover aqui)
+        // LOCKET (caso não seja apanhado noutro ecrã, podes deixar ou remover aqui)
         locketManager = new LocketManager();
         locketTexture = new Texture(Gdx.files.internal("locket.png"));
         locketIcon = new Texture(Gdx.files.internal("locket.png"));
 
-// WAND (caso seja apanhada noutro ecrã, apenas carrega a textura e ícone)
+        // WAND (caso seja apanhada noutro ecrã, apenas carrega a textura e ícone)
         wandManager = new WandManager();
         wandTexture = new Texture(Gdx.files.internal("Wand.png"));
         wandIcon = new Texture(Gdx.files.internal("Wand.png"));
@@ -192,7 +191,7 @@ public class GameScreen implements Screen {
                 paused = !paused;
             }
 
-            handleInput();
+
             movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
             animationSystem.update(entityManager.getEntities(), delta);
 
@@ -206,7 +205,7 @@ public class GameScreen implements Screen {
             wandManager.updateAndNotifyWands(pos.x, pos.y, inventory);
 
             if (!paused) {
-                handleInput();
+
                 movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
                 player.getComponent(AnimationComponent.class).update(delta);
 
@@ -257,7 +256,7 @@ public class GameScreen implements Screen {
                         AStarPathfinder pathfinder = new AStarPathfinder(MapLoader.loadMap("mapa.txt"));
                         List<Node> path = pathfinder.findPath(startX, startY, tileX, tileY);
 
-                        // ✅ Remover primeiro passo se for o mesmo tile onde o jogador já está
+                        // Remover primeiro passo se for o mesmo tile onde o jogador já está
                         if (path != null && !path.isEmpty() && path.get(0).x == startX && path.get(0).y == startY) {
                             path.remove(0);
                         }
@@ -287,14 +286,14 @@ public class GameScreen implements Screen {
             goldenKeyManager.render(batch, goldenKeyTexture, delta);
             batch.end();
 
-            // 🔴 Desenhar ponto vermelho na entrada de Hogwarts
+            // Desenhar ponto vermelho na entrada de Hogwarts
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(Color.RED);
             shapeRenderer.circle(7 * TILE_SIZE + 16, 34 * TILE_SIZE + 16, 6);
             shapeRenderer.end();
 
-            // 🟢 Ponto de vitória do jogo (tile 20,5)
+            // Ponto de vitória do jogo (tile 20,5)
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(Color.LIME);
             shapeRenderer.circle(22 * TILE_SIZE + 16, 3 * TILE_SIZE + 16, 6);
@@ -366,9 +365,6 @@ public class GameScreen implements Screen {
             }
 
 
-
-
-
             batch.end();
 
 
@@ -377,45 +373,6 @@ public class GameScreen implements Screen {
         }
     }
 
-
-    private void handleInput() {
-        VelocityComponent vel = player.getComponent(VelocityComponent.class);
-        AnimationComponent anim = player.getComponent(AnimationComponent.class);
-
-        if (vel == null || anim == null) return;
-
-        // Verifica se alguma tecla foi premida
-        boolean keyPressed = false;
-        vel.vx = 0;
-        vel.vy = 0;
-
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            vel.vx = -100;
-            anim.setDirection("left");
-            keyPressed = true;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            vel.vx = 100;
-            anim.setDirection("right");
-            keyPressed = true;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            vel.vy = 100;
-            anim.setDirection("up");
-            keyPressed = true;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            vel.vy = -100;
-            anim.setDirection("down");
-            keyPressed = true;
-        }
-
-        // ⚠️ Se nenhuma tecla estiver a ser premida, não alteres direção nem movimento
-        if (!keyPressed) {
-            vel.vx = 0;
-            vel.vy = 0;
-        }
-    }
 
 
     private void clampCameraPosition() {

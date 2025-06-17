@@ -350,15 +350,15 @@ public class GameScreen implements Screen {
                 inventoryX + iconSize + paddingY,
                 inventoryY - iconSize * 4.5f - 32 + 6);
 
-            /*if (paused) {
+            if (paused) {
                 font.getData().setScale(2.5f);
                 font.setColor(Color.RED);
                 font.draw(batch, "Jogo Pausado", camera.position.x - 100, camera.position.y);
                 font.getData().setScale(1.0f);
                 font.setColor(Color.WHITE);
             }
-*/
-            if (paused) {
+
+            if (gameWon) {
                 if (batch.isDrawing()) batch.end();
                 game.setScreen(new CongratulationsScreen(game));
 

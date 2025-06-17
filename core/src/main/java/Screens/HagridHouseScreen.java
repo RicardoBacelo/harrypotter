@@ -381,6 +381,7 @@ public class HagridHouseScreen implements Screen {
         int tileY = (int) (y / TILE_SIZE);
 
         PathComponent pathComp = player.getComponent(PathComponent.class);
+
         if (pathComp != null && pathComp.path.isEmpty()) {
             if (tileX == 15 && tileY == 1 && inventory.getItemCount(ItemType.LOCKET) > 0) {
                 if (batch.isDrawing()) batch.end();

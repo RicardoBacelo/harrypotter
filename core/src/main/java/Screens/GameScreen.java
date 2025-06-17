@@ -383,7 +383,6 @@ public class GameScreen implements Screen {
                 dispose();
             }
 
-            // (Opcional) Se quiseres mostrar aviso ao tentar entrar sem chave:
             if (tileX == 23 && tileY == 10 && inventory.getItemCount(ItemType.GOLDEN_KEY) == 0) {
                 System.out.println("🚪 Porta trancada. Precisas da Golden Key.");
             }

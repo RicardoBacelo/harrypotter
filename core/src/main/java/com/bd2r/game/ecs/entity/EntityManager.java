@@ -17,8 +17,4 @@ public class EntityManager {
     public List<Entity> getEntities() {
         return entities;
     }
-
-    public void removeEntity(Entity entity) {
-        entities.remove(entity);
-    }
 }

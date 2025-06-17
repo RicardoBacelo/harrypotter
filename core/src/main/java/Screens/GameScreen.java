@@ -7,19 +7,16 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.bd2r.game.ecs.systems.CameraSystem;
 import com.bd2r.game.Inventory;
 import com.bd2r.game.MainGame;
 import com.bd2r.game.MapLoader;
 import com.bd2r.game.Observer.*;
-import com.bd2r.game.ecs.entity.Entity;
-import com.bd2r.game.ecs.entity.EntityManager;
+import com.bd2r.game.ecs.entity.*;
 import com.bd2r.game.ecs.components.*;
-import com.bd2r.game.ecs.systems.AnimationSystem;
-import com.bd2r.game.ecs.systems.MovementSystem;
-import com.bd2r.game.ecs.systems.RenderSystem;
+import com.bd2r.game.ecs.systems.*;
 import com.bd2r.game.factory.EntityFactory;
-import com.bd2r.game.pathfinder.AStarPathfinder;
-import com.bd2r.game.pathfinder.Node;
+import com.bd2r.game.pathfinder.*;
 
 import com.badlogic.gdx.utils.TimeUtils;
 
@@ -120,7 +117,7 @@ public class GameScreen implements Screen {
             player = EntityFactory.createPlayer(485, 60, playerTexture);
         }
         entityManager.addEntity(player);
-        //  Corrigir velocidade ao voltar da casa
+        // Corrigir velocidade ao voltar da casa
         VelocityComponent vel = player.getComponent(VelocityComponent.class);
         if (vel != null) {
             vel.speed = PLAYER_SPEED;  // Usa o valor definido no topo (100f)
@@ -132,7 +129,6 @@ public class GameScreen implements Screen {
             sprite.scale = 1f; // Ou o valor que usavas antes
         }
 
-
         // COINS
         coinManager = new CoinManager();
         coinTexture = new Texture(Gdx.files.internal("coin.png"));
@@ -142,7 +138,7 @@ public class GameScreen implements Screen {
             coinManager.addCoin(new Coin(400, 200), this);
         }
 
-        // SILVER KEY
+// SILVER KEY
         silverKeyManager = new SilverKeyManager();
         silverKeyTexture = new Texture(Gdx.files.internal("House_Key.png"));
         silverKeyIcon = new Texture(Gdx.files.internal("House_Key.png"));
@@ -150,7 +146,7 @@ public class GameScreen implements Screen {
             silverKeyManager.addSilverKey(new SilverKey(450, 150), this);
         }
 
-        // GOLDEN KEY
+// GOLDEN KEY
         goldenKeyManager = new GoldenKeyManager();
         goldenKeyTexture = new Texture(Gdx.files.internal("Castle_Key.png"));
         goldenKeyIcon = new Texture(Gdx.files.internal("Castle_Key.png"));
@@ -158,12 +154,12 @@ public class GameScreen implements Screen {
             goldenKeyManager.addGoldenKey(new GoldenKey(650, 150), this);
         }
 
-        // LOCKET (caso não seja apanhado noutro ecrã, podes deixar ou remover aqui)
+// LOCKET (caso não seja apanhado noutro ecrã, podes deixar ou remover aqui)
         locketManager = new LocketManager();
         locketTexture = new Texture(Gdx.files.internal("locket.png"));
         locketIcon = new Texture(Gdx.files.internal("locket.png"));
 
-        // WAND (caso seja apanhada noutro ecrã, apenas carrega a textura e ícone)
+// WAND (caso seja apanhada noutro ecrã, apenas carrega a textura e ícone)
         wandManager = new WandManager();
         wandTexture = new Texture(Gdx.files.internal("Wand.png"));
         wandIcon = new Texture(Gdx.files.internal("Wand.png"));
@@ -182,15 +178,13 @@ public class GameScreen implements Screen {
 
     }
 
-
     @Override
     public void render(float delta) {
         try {
-
+            //Camera camera = new Camera();
             if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
                 paused = !paused;
             }
-
 
             movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
             animationSystem.update(entityManager.getEntities(), delta);
@@ -205,7 +199,6 @@ public class GameScreen implements Screen {
             wandManager.updateAndNotifyWands(pos.x, pos.y, inventory);
 
             if (!paused) {
-
                 movementSystem.update(entityManager.getEntities(), delta, mapWidth, mapHeight);
                 player.getComponent(AnimationComponent.class).update(delta);
 
@@ -233,10 +226,8 @@ public class GameScreen implements Screen {
                     lastDirectionChangeTime = TimeUtils.millis();
                 }
 
-
-
                 camera.position.set(pos.x + 16, pos.y + 16, 0);
-                clampCameraPosition();
+                CameraSystem.clampCameraPosition(mapWidth, mapHeight, camera);
                 camera.update();
 
                 Gdx.gl.glClearColor(0.1f, 0.1f, 0.3f, 1);
@@ -309,33 +300,33 @@ public class GameScreen implements Screen {
             int iconSize = 24;
             float paddingY = 4f;
 
-// Fundo do inventário
+            // Fundo do inventário
             batch.setColor(0f, 0f, 0f, 0.5f);
             batch.draw(whitePixel, inventoryX - 16, inventoryY - 160, 180, 180);
             batch.setColor(Color.WHITE);
 
-// Título
+            // Título
             font.draw(batch, "Inventário", inventoryX, inventoryY + 15);
 
-// Moeda
+            // Moeda
             batch.draw(coinIcon, inventoryX, inventoryY - iconSize, iconSize, iconSize);
             font.draw(batch, "x " + inventory.getItemCount(ItemType.COIN),
                 inventoryX + iconSize + paddingY,
                 inventoryY - iconSize / 2f + 6);
 
-// Chave prata
+            // Chave prata
             batch.draw(silverKeyIcon, inventoryX, inventoryY - iconSize * 2 - 8, iconSize, iconSize);
             font.draw(batch, "x " + inventory.getItemCount(ItemType.SILVER_KEY),
                 inventoryX + iconSize + paddingY,
                 inventoryY - iconSize * 1.5f - 8 + 6);
 
-// Chave dourada
+            // Chave dourada
             batch.draw(goldenKeyIcon, inventoryX, inventoryY - iconSize * 3 - 16, iconSize, iconSize);
             font.draw(batch, "x " + inventory.getItemCount(ItemType.GOLDEN_KEY),
                 inventoryX + iconSize + paddingY,
                 inventoryY - iconSize * 2.5f - 16 + 6);
 
-// Medalhão (locket)
+            // Medalhão (locket)
             if (locketIcon != null) {
                 batch.draw(locketIcon, inventoryX, inventoryY - iconSize * 4 - 24, iconSize, iconSize);
                 font.draw(batch, "x " + inventory.getItemCount(ItemType.LOCKET),
@@ -343,7 +334,7 @@ public class GameScreen implements Screen {
                     inventoryY - iconSize * 3.5f - 24 + 6);
             }
 
-// Varinha
+            // Varinha
             batch.draw(wandIcon, inventoryX, inventoryY - iconSize * 5 - 32, iconSize, iconSize);
             font.draw(batch, "x " + inventory.getItemCount(ItemType.WAND),
                 inventoryX + iconSize + paddingY,
@@ -363,37 +354,15 @@ public class GameScreen implements Screen {
 
                 dispose();
             }
-
-
             batch.end();
-
 
         } catch (Exception e) {
             Gdx.app.error("GameScreen", "Error in render", e);
         }
     }
-
-
-
-    private void clampCameraPosition() {
-        float halfWidth = camera.viewportWidth / 2f;
-        float halfHeight = camera.viewportHeight / 2f;
-
-        float minX = halfWidth;
-        float maxX = mapWidth - halfWidth;
-        float minY = halfHeight;
-        float maxY = mapHeight - halfHeight;
-
-        camera.position.x = Math.max(minX, Math.min(camera.position.x, maxX));
-        camera.position.y = Math.max(minY, Math.min(camera.position.y, maxY));
-    }
-
     private void checkTriggers(float x, float y) {
         int tileX = (int) (x / TILE_SIZE);
         int tileY = (int) (y / TILE_SIZE);
-
-        // Debug: ver em que tile estás
-        System.out.println("tileX = " + tileX + ", tileY = " + tileY);
 
         PathComponent pathComp = player.getComponent(PathComponent.class);
 
@@ -435,9 +404,6 @@ public class GameScreen implements Screen {
 
         }
     }
-
-
-
 
     @Override public void resize(int width, int height) {}
     @Override public void pause() {}

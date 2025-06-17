@@ -12,6 +12,7 @@ import com.bd2r.game.Observer.*;
 import com.bd2r.game.ecs.entity.Entity;
 import com.bd2r.game.ecs.entity.EntityManager;
 import com.bd2r.game.ecs.components.*;
+import com.bd2r.game.ecs.systems.CameraSystem;
 import com.bd2r.game.ecs.systems.RenderSystem;
 import com.bd2r.game.factory.EntityFactory;
 import com.bd2r.game.pathfinder.*;
@@ -283,7 +284,7 @@ public class HagridHouseScreen implements Screen {
             camera.position.set(pos.x + TILE_SIZE, pos.y + TILE_SIZE, 0);
         }
 
-        clampCameraPosition();
+        CameraSystem.clampCameraPosition(mapWidth, mapHeight, camera);
         camera.update();
         batch.setProjectionMatrix(camera.combined);
 
@@ -362,7 +363,7 @@ public class HagridHouseScreen implements Screen {
         batch.end();
 
 
-        // 🔴 Só mostra ponto vermelho se já tiver o medalhão
+        // Só mostra ponto vermelho se já tiver o medalhão
         if (inventory.getItemCount(ItemType.LOCKET) > 0) {
             ShapeRenderer shapeRenderer = new ShapeRenderer();
             shapeRenderer.setProjectionMatrix(camera.combined);
@@ -417,13 +418,6 @@ public class HagridHouseScreen implements Screen {
         } else {
             vel.vx = 0; vel.vy = 0;
         }
-    }
-
-    private void clampCameraPosition() {
-        float hw = camera.viewportWidth / 2f;
-        float hh = camera.viewportHeight / 2f;
-        camera.position.x = Math.max(hw, Math.min(camera.position.x, mapWidth - hw));
-        camera.position.y = Math.max(hh, Math.min(camera.position.y, mapHeight - hh));
     }
 
     @Override public void resize(int width, int height) {

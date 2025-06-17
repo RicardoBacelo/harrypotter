@@ -18,6 +18,7 @@ import com.bd2r.game.ecs.entity.Entity;
 import com.bd2r.game.ecs.entity.EntityManager;
 import com.bd2r.game.ecs.components.*;
 import com.bd2r.game.ecs.systems.AnimationSystem;
+import com.bd2r.game.ecs.systems.CameraSystem;
 import com.bd2r.game.ecs.systems.MovementSystem;
 import com.bd2r.game.ecs.systems.RenderSystem;
 import com.bd2r.game.pathfinder.AStarPathfinder;
@@ -59,16 +60,7 @@ public class HogwartsScreen implements Screen {
 
     // Fantasma
     private Texture ghostTexture;
-    private TextureRegion[] ghostFrames;
-    private AnimationComponent ghostAnim;
-    private Entity ghost;
-    private boolean ghostMessageVisible = false;
-    private float ghostMessageTimer = 0f;
-    private final float GHOST_MESSAGE_DURATION = 3f;
-
     private final List<Entity> ghosts = new ArrayList<>();
-
-
 
     private static final int TILE_SIZE = 32;
 
@@ -204,7 +196,7 @@ public class HogwartsScreen implements Screen {
             camera.position.set(pos.x + 16, pos.y + 16, 0);
         }
 
-        clampCameraPosition();
+        CameraSystem.clampCameraPosition(mapWidth, mapHeight, camera);
         camera.update();
         batch.setProjectionMatrix(camera.combined);
 
@@ -314,24 +306,9 @@ public class HogwartsScreen implements Screen {
 
     }
 
-
-    private void clampCameraPosition() {
-        float halfWidth = camera.viewportWidth / 2f;
-        float halfHeight = camera.viewportHeight / 2f;
-
-        float minX = halfWidth;
-        float maxX = mapWidth - halfWidth;
-        float minY = halfHeight;
-        float maxY = mapHeight - halfHeight;
-
-        camera.position.x = Math.max(minX, Math.min(camera.position.x, maxX));
-        camera.position.y = Math.max(minY, Math.min(camera.position.y, maxY));
-    }
     private void checkTriggers(float x, float y) {
         int tileX = (int) (x / TILE_SIZE);
         int tileY = (int) (y / TILE_SIZE);
-
-        System.out.println("tileX = " + tileX + ", tileY = " + tileY); // debug
 
         PathComponent pathComp = player.getComponent(PathComponent.class);
 
@@ -359,8 +336,6 @@ public class HogwartsScreen implements Screen {
             }
         }
     }
-
-
 
     @Override public void resize(int width, int height) {
         camera.viewportWidth = width;

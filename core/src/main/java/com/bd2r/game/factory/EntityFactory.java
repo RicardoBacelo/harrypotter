@@ -59,11 +59,11 @@ public class EntityFactory {
 
         return owl;
     }
-    public static Entity createGhost(float x, float y, TextureRegion sprite) {
+    public static Entity createGhost(float x, float y, TextureRegion[] frames) {
         Entity ghost = new Entity();
         ghost.addComponent(new PositionComponent(x, y));
-        ghost.addComponent(new VelocityComponent(0f, 0f, 30f)); // lento/flutuante
-        ghost.addComponent(new SpriteComponent(sprite, 1f));
+        ghost.addComponent(new SpriteComponent(frames[0], 1.5f));
+        ghost.addComponent(new VelocityComponent(0f, 0f, 50f));
         return ghost;
     }
     public static Entity createSpider(float x, float y, Texture spiderTexture) {

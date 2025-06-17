@@ -21,6 +21,7 @@ import com.bd2r.game.ecs.systems.AnimationSystem;
 import com.bd2r.game.ecs.systems.CameraSystem;
 import com.bd2r.game.ecs.systems.MovementSystem;
 import com.bd2r.game.ecs.systems.RenderSystem;
+import com.bd2r.game.factory.EntityFactory;
 import com.bd2r.game.pathfinder.AStarPathfinder;
 import com.bd2r.game.pathfinder.Node;
 import com.bd2r.game.Inventory;
@@ -353,10 +354,7 @@ public class HogwartsScreen implements Screen {
         if (mapTexture != null) mapTexture.dispose();
     }
     private void addGhost(float x, float y, TextureRegion[] frames) {
-        Entity ghost = new Entity();
-        ghost.addComponent(new PositionComponent(x, y));
-        ghost.addComponent(new SpriteComponent(frames[0], 1.5f));
-        ghost.addComponent(new VelocityComponent(0f, 0f, 50f));
+        Entity ghost = EntityFactory.createGhost(x, y, frames);
 
         AnimationComponent anim = new AnimationComponent(0.1f);
         anim.addAnimation("float", frames);

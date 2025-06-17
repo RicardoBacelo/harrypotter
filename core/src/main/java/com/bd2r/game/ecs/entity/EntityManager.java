@@ -1,4 +1,4 @@
-package com.bd2r.game.ecs;
+package com.bd2r.game.ecs.entity;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,7 +1,7 @@
 package com.bd2r.game.ecs.systems;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.bd2r.game.ecs.Entity;
+import com.bd2r.game.ecs.entity.Entity;
 import com.bd2r.game.ecs.components.PositionComponent;
 import com.bd2r.game.ecs.components.SpriteComponent;
 

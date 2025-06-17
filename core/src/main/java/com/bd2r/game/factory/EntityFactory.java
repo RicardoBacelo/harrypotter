@@ -1,9 +1,8 @@
 package com.bd2r.game.factory;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.bd2r.game.ecs.Entity;
+import com.bd2r.game.ecs.entity.Entity;
 import com.bd2r.game.ecs.components.AnimationComponent;
 import com.bd2r.game.ecs.components.PositionComponent;
 import com.bd2r.game.ecs.components.SpriteComponent;

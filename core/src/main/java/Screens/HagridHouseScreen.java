@@ -9,8 +9,8 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.bd2r.game.*;
 import com.bd2r.game.Observer.*;
-import com.bd2r.game.ecs.Entity;
-import com.bd2r.game.ecs.EntityManager;
+import com.bd2r.game.ecs.entity.Entity;
+import com.bd2r.game.ecs.entity.EntityManager;
 import com.bd2r.game.ecs.components.*;
 import com.bd2r.game.ecs.systems.RenderSystem;
 import com.bd2r.game.factory.EntityFactory;
@@ -369,7 +369,7 @@ public class HagridHouseScreen implements Screen {
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(Color.RED);
             // Ponto vermelho na tile de saída (ajustada para evitar loop)
-            shapeRenderer.circle(15 * TILE_SIZE + TILE_SIZE / 2f, 1 * TILE_SIZE + TILE_SIZE / 2f, 6);;// centro do mapa
+            shapeRenderer.circle(15 * TILE_SIZE + TILE_SIZE / 2f, TILE_SIZE + TILE_SIZE / 2f, 6);// centro do mapa
             shapeRenderer.end();
             shapeRenderer.dispose();
         }

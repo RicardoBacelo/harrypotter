@@ -4,8 +4,6 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 
 public class CameraSystem {
 
-
-
     public static void clampCameraPosition(int mapWidth, int mapHeight, OrthographicCamera camera) {
 
         float halfWidth = camera.viewportWidth / 2f;
